@@ -305,7 +305,7 @@
 
   function cacheEls() {
     ['view-cours', 'view-libre', 'view-train', 'view-stats', 'lesson-map', 'cours-progress',
-     'cours-progress-label', 'map-hint', 'train-context', 'text-display', 'keyboard', 'keyboard-heat',
+     'cours-progress-label', 'map-hint', 'btn-continue', 'train-context', 'text-display', 'keyboard', 'keyboard-heat',
      'finger-legend', 'kb-zone', 'hud-wpm', 'hud-acc', 'hud-err', 'hud-time', 'progress-bar',
      'btn-start-free', 'btn-sound', 'btn-quit', 'logo-home', 'results-modal', 'res-stars', 'res-xp',
      'res-wpm', 'res-acc', 'res-err', 'res-chars', 'res-time', 'res-chart', 'res-sub', 'res-title',
@@ -355,31 +355,57 @@
     var map = els['lesson-map'];
     map.innerHTML = '';
     var done = 0, cur = firstIncompleteIdx();
-    LESSONS.forEach(function (l, i) {
-      var stars = G.stars[l.id] || 0;
-      var unlocked = isUnlocked(G.stars, i);
-      if (stars > 0) done++;
-      var card = document.createElement('div');
-      card.className = 'lesson-card'
-        + (unlocked ? '' : ' locked')
-        + (stars > 0 ? ' done' : '')
-        + (stars === 3 ? ' gold' : '')
-        + (unlocked && i === cur ? ' current' : '');
-      var keysHtml = l.newKeys.map(function (k) {
-        var f = fingerOfCode(charToCode(k)) || 'th';
-        return '<span class="mini-key f-' + f + '">' + k.toUpperCase() + '</span>';
-      }).join('');
-      card.innerHTML =
-        '<div class="lesson-top"><span class="lesson-num">' + (i + 1) + '</span>' +
-        '<span class="lesson-name">' + l.name + '</span></div>' +
-        (unlocked ? '' : '<span class="lesson-lock">🔒</span>') +
-        '<div class="lesson-newkeys">' + keysHtml + '</div>' +
-        '<div class="lesson-stars">' + starsHtml(stars) + '</div>';
-      if (unlocked) {
-        card.addEventListener('click', function () { openLessonModal(l); });
-      }
-      map.appendChild(card);
+
+    // Bouton Continuer : reprend directement la prochaine leçon à faire
+    var cont = els['btn-continue'];
+    if (cur >= 0) {
+      var l0 = LESSONS[cur];
+      cont.hidden = false;
+      cont.textContent = '▶ Continuer — Leçon ' + (cur + 1) + ' : ' + l0.name;
+      cont.onclick = function () { startSession({ kind: 'lesson', lesson: l0 }); };
+    } else {
+      cont.hidden = false;
+      cont.textContent = '🏆 Cours terminé ! Revois tes leçons ou passe en mode Libre';
+      cont.onclick = function () { showView('libre'); };
+    }
+
+    var UNITS = globalThis.UNITS || [];
+    UNITS.forEach(function (u) {
+      var head = document.createElement('div');
+      head.className = 'unit-head';
+      head.innerHTML = '<span class="unit-icon">' + u.icon + '</span> ' + u.name;
+      map.appendChild(head);
+      var grid = document.createElement('div');
+      grid.className = 'unit-grid';
+      LESSONS.forEach(function (l, i) {
+        if (l.unit !== u.id) return;
+        var stars = G.stars[l.id] || 0;
+        var unlocked = isUnlocked(G.stars, i);
+        if (stars > 0) done++;
+        var card = document.createElement('div');
+        card.className = 'lesson-card'
+          + (unlocked ? '' : ' locked')
+          + (stars > 0 ? ' done' : '')
+          + (stars === 3 ? ' gold' : '')
+          + (unlocked && i === cur ? ' current' : '');
+        var keysHtml = l.newKeys.map(function (k) {
+          var f = fingerOfCode(charToCode(k)) || 'th';
+          return '<span class="mini-key f-' + f + '">' + k.toUpperCase() + '</span>';
+        }).join('');
+        card.innerHTML =
+          '<div class="lesson-top"><span class="lesson-num">' + (i + 1) + '</span>' +
+          '<span class="lesson-name">' + l.name + '</span></div>' +
+          (unlocked ? '' : '<span class="lesson-lock">🔒</span>') +
+          '<div class="lesson-newkeys">' + keysHtml + '</div>' +
+          '<div class="lesson-stars">' + starsHtml(stars) + '</div>';
+        if (unlocked) {
+          card.addEventListener('click', function () { openLessonModal(l); });
+        }
+        grid.appendChild(card);
+      });
+      map.appendChild(grid);
     });
+
     els['cours-progress'].style.width = (LESSONS.length ? (done / LESSONS.length) * 100 : 0) + '%';
     els['cours-progress-label'].textContent = done + ' / ' + LESSONS.length + ' leçons terminées · ⭐ ' + totalStars(G.stars) + ' / ' + (LESSONS.length * 3) + ' · XP ' + G.xp;
     els['map-hint'].hidden = done > 0 || cur === -1;
@@ -608,16 +634,28 @@
       S.correct++;
       flashKey(code, true);
       sfx('ok');
+      S.caret++;
+      updateCursor();
     } else {
-      S.spans[S.caret].className = 'ch bad';
       S.errors++;
       S.errorMap[code] = (S.errorMap[code] || 0) + 1;
       flashKey(code, false);
       sfx('bad');
+      // En leçon : faute bloquante façon TypingClub — on n'avance pas tant que la touche n'est pas juste
+      if (S.ctx.kind === 'lesson') {
+        var sp = S.spans[S.caret];
+        sp.classList.remove('ok');
+        sp.classList.add('bad'); // on garde la classe cursor intacte
+        var expCode = charToCode(expected);
+        if (expCode) flashKey(expCode, false);
+        updateNextKey();
+        updateHud();
+        return;
+      }
+      S.spans[S.caret].className = 'ch bad';
+      S.caret++;
+      updateCursor();
     }
-
-    S.caret++;
-    updateCursor();
 
     if (S.mode === 'time' && S.caret > S.text.length - 30) {
       appendText(genWords(ui.lang, 'normal', 40));
@@ -742,6 +780,7 @@
 
     els['results-modal'].hidden = false;
     drawLineChart(els['res-chart'], S.wpmSamples.map(function (p) { return p.wpm; }), '#22d3ee');
+    if (g.stars === 3 || g.levelUp) confettiBurst();
   }
 
   /* ---------- toast ---------- */
@@ -752,6 +791,46 @@
     t.hidden = false;
     if (toastTimer) clearTimeout(toastTimer);
     toastTimer = setTimeout(function () { t.hidden = true; }, 3200);
+  }
+
+  /* ---------- confettis (canvas plein écran, ~2.5 s) ---------- */
+  function confettiBurst() {
+    if (typeof document === 'undefined' || !document.body || typeof requestAnimationFrame === 'undefined') return;
+    try {
+      var c = document.createElement('canvas');
+      c.className = 'confetti';
+      c.width = window.innerWidth; c.height = window.innerHeight;
+      document.body.appendChild(c);
+      var ctx = c.getContext('2d');
+      var colors = ['#22d3ee', '#a78bfa', '#f472b6', '#fbbf24', '#34d399'];
+      var parts = [];
+      for (var i = 0; i < 150; i++) {
+        parts.push({
+          x: window.innerWidth / 2 + (Math.random() - 0.5) * 260,
+          y: window.innerHeight * 0.32,
+          vx: (Math.random() - 0.5) * 15,
+          vy: -Math.random() * 14 - 4,
+          s: Math.random() * 7 + 4,
+          col: colors[rand(colors.length)],
+          r: Math.random() * Math.PI,
+          vr: (Math.random() - 0.5) * 0.3
+        });
+      }
+      var t0 = performance.now();
+      function frame(t) {
+        ctx.clearRect(0, 0, c.width, c.height);
+        parts.forEach(function (p) {
+          p.x += p.vx; p.y += p.vy; p.vy += 0.35; p.r += p.vr;
+          ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.r);
+          ctx.fillStyle = p.col;
+          ctx.fillRect(-p.s / 2, -p.s / 2, p.s, p.s * 0.6);
+          ctx.restore();
+        });
+        if (t - t0 < 2600) requestAnimationFrame(frame);
+        else if (c.parentNode) c.parentNode.removeChild(c);
+      }
+      requestAnimationFrame(frame);
+    } catch (e) { /* confettis indisponibles : on ignore */ }
   }
 
   /* ---------- graphiques (canvas, aucun lib) ---------- */

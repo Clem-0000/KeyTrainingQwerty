@@ -44,7 +44,17 @@ class El {
   }
   get className() { return [...this._classes].join(' '); }
   set className(v) { this._classes = new Set(String(v).split(/\s+/).filter(Boolean)); }
-  set innerHTML(v) { this._html = v; if (v === '') this.children = []; }
+  set innerHTML(v) {
+    this._html = v;
+    if (v === '') {
+      // comme un vrai navigateur : les descendants disparaissent du document
+      const doomed = new Set();
+      const collect = (e) => { e.children.forEach(c => { doomed.add(c); collect(c); }); };
+      collect(this);
+      this.children = [];
+      for (let i = registry.length - 1; i >= 0; i--) if (doomed.has(registry[i])) registry.splice(i, 1);
+    }
+  }
   get innerHTML() { return this._html; }
   set textContent(v) { this._text = String(v); }
   get textContent() { return this._text; }
@@ -79,7 +89,7 @@ function el(tag, id, cls) { const e = new El(tag); if (id) e.id = id; if (cls) e
 const byId = {};
 function reg(e) { byId[e.id] = e; return e; }
 
-const ids = ['view-cours','view-libre','view-train','view-stats','lesson-map','cours-progress','cours-progress-label','map-hint','train-context','text-display','keyboard','keyboard-heat','finger-legend','kb-zone','hud-wpm','hud-acc','hud-err','hud-time','progress-bar','btn-start-free','btn-sound','btn-quit','logo-home','results-modal','res-stars','res-xp','res-wpm','res-acc','res-err','res-chars','res-time','res-chart','res-sub','res-title','record-banner','levelup-banner','levelup-n','res-badges','btn-next','btn-again','btn-home','lesson-modal','lesson-newkeys','lesson-name','lesson-desc','lesson-best','btn-lesson-start','btn-lesson-back','stats-cards','stats-chart','stats-level','badges-grid','btn-clear-history','opt-keyboard','hdr-level','hdr-xpfill','hdr-stars','hdr-stars-max','hdr-streak','toast'];
+const ids = ['view-cours','view-libre','view-train','view-stats','lesson-map','cours-progress','cours-progress-label','map-hint','btn-continue','train-context','text-display','keyboard','keyboard-heat','finger-legend','kb-zone','hud-wpm','hud-acc','hud-err','hud-time','progress-bar','btn-start-free','btn-sound','btn-quit','logo-home','results-modal','res-stars','res-xp','res-wpm','res-acc','res-err','res-chars','res-time','res-chart','res-sub','res-title','record-banner','levelup-banner','levelup-n','res-badges','btn-next','btn-again','btn-home','lesson-modal','lesson-newkeys','lesson-name','lesson-desc','lesson-best','btn-lesson-start','btn-lesson-back','stats-cards','stats-chart','stats-level','badges-grid','btn-clear-history','opt-keyboard','hdr-level','hdr-xpfill','hdr-stars','hdr-stars-max','hdr-streak','toast'];
 ids.forEach(id => reg(el('div', id)));
 ['view-libre', 'view-train', 'view-stats', 'results-modal', 'lesson-modal', 'toast'].forEach(id => { byId[id].hidden = true; });
 byId['res-chart'].attrs.height = '110'; byId['stats-chart'].attrs.height = '180';
@@ -152,10 +162,14 @@ let failures = 0;
 function ok(cond, label) { if (cond) console.log('  PASS', label); else { failures++; console.error('  FAIL', label); } }
 const game = () => JSON.parse(store['ktq_game'] || '{}');
 
+const lessonCards = () => registry.filter(e => e.classList.contains('lesson-card'));
+
 console.log('== init : carte des leçons ==');
 ok(byId['view-cours'].hidden === false, 'vue Cours visible par défaut');
-ok(byId['lesson-map'].children.length === KTQ.LESSONS.length, `carte = ${KTQ.LESSONS.length} leçons`);
-const card0 = byId['lesson-map'].children[0], card1 = byId['lesson-map'].children[1];
+ok(lessonCards().length === KTQ.LESSONS.length, `carte = ${KTQ.LESSONS.length} leçons`);
+ok(registry.filter(e => e.classList.contains('unit-head')).length === 6, '6 unités de cours affichées');
+ok(byId['btn-continue'].hidden === false && byId['btn-continue'].textContent.includes('Leçon 1'), 'bouton Continuer -> Leçon 1: ' + byId['btn-continue'].textContent);
+const card0 = lessonCards()[0], card1 = lessonCards()[1];
 ok(card0.classList.contains('current') && !card0.classList.contains('locked'), 'leçon 1 brillante et débloquée');
 ok(card1.classList.contains('locked'), 'leçon 2 verrouillée au départ');
 ok(byId['hdr-level'].textContent === '1', 'niveau 1 au départ');
@@ -194,21 +208,26 @@ const t2 = typeAll();
 ok(game().stars.l02 >= 1, 'leçon 2 terminée, étoiles enregistrées');
 byId['btn-home'].click();
 ok(byId['view-cours'].hidden === false, 'retour à la carte des leçons');
-ok(byId['lesson-map'].children[0].classList.contains('done'), 'leçon 1 marquée terminée');
-ok(!byId['lesson-map'].children[2].classList.contains('locked'), 'leçon 3 débloquée après 1★ sur l02');
+ok(lessonCards()[0].classList.contains('done'), 'leçon 1 marquée terminée');
+ok(!lessonCards()[2].classList.contains('locked'), 'leçon 3 débloquée après 1★ sur l02');
 ok(byId['cours-progress-label'].textContent.includes('2 /'), 'progression 2/21 affichée: ' + byId['cours-progress-label'].textContent);
 
-console.log('== erreur + backspace en jeu ==');
-byId['lesson-map'].children[2].click();
+console.log('== faute bloquante en leçon (style TypingClub) ==');
+lessonCards()[2].click();
 byId['btn-lesson-start'].click();
 const before = byId['text-display'].children[0].textContent;
 const wrong = before === 'a' ? 'z' : 'a';
 fireKey(wrong, KTQ.charToCode(wrong));
 ok(byId['hud-err'].textContent === '1', 'erreur comptée');
-fireKey('Backspace', 'Backspace');
-ok(byId['hud-err'].textContent === '1' && byId['text-display'].children[0].classList.contains('ch'), 'backspace efface la marque d\'erreur');
+ok(byId['results-modal'].hidden === true, 'pas de fin prématurée');
+ok(byId['text-display'].children[0].classList.contains('bad') && !byId['text-display'].children[0].classList.contains('ok'), 'caractère attendu marqué en rouge');
+ok(byId['text-display'].children[0].classList.contains('cursor') && !byId['text-display'].children[1].classList.contains('cursor'), 'le curseur N\'AVANCE PAS sur une faute (bloquant)');
+fireKey(before, KTQ.charToCode(before));
+ok(byId['text-display'].children[0].classList.contains('ok'), 'la bonne touche valide et fait avancer');
+ok(byId['text-display'].children[1].classList.contains('cursor'), 'curseur avancé après la bonne touche');
 byId['btn-quit'].click();
 ok(byId['view-cours'].hidden === false, 'quitter retourne à la carte');
+ok(byId['btn-continue'].textContent.includes('Leçon 3'), 'Continuer pointe vers la leçon 3: ' + byId['btn-continue'].textContent);
 
 console.log('== mode libre ==');
 tabs.find(t => t.dataset.view === 'libre').click();
@@ -240,11 +259,14 @@ byId['btn-start-free'].click();
 ok(byId['kb-zone'].style.display === 'none', 'clavier masqué via option');
 byId['btn-quit'].click();
 
-console.log('== raccourci Entrée sur la carte ==');
+console.log('== raccourcis : Continuer et Entrée sur la carte ==');
 tabs.find(t => t.dataset.view === 'cours').click();
 ok(byId['view-cours'].hidden === false, 'retour sur la carte des leçons');
+byId['btn-continue'].click();
+ok(byId['view-train'].hidden === false && byId['lesson-modal'].hidden === true && byId['train-context'].textContent.includes('Leçon 3'), 'Continuer lance la leçon 3 directement (sans modale): ' + byId['train-context'].textContent);
+byId['btn-quit'].click();
 fireKey('Enter', 'Enter');
-ok(byId['view-train'].hidden === false && byId['train-context'].textContent.includes('Leçon 3'), 'Entrée lance la prochaine leçon à faire: ' + byId['train-context'].textContent);
+ok(byId['view-train'].hidden === false && byId['train-context'].textContent.includes('Leçon 3'), 'Entrée lance aussi la prochaine leçon à faire');
 byId['btn-quit'].click();
 
 console.log(failures === 0 ? '\n✅ TEST DOM: TOUT PASSE' : `\n❌ ${failures} ÉCHEC(S)`);

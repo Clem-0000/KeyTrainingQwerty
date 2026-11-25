@@ -31,12 +31,14 @@ L'application est alors disponible à l'adresse :
 ## 🎯 Fonctionnalités
 
 ### 🎮 Cours gamifié (façon TypingClub)
-- **21 leçons progressives** sur la carte des niveaux : repères `F`/`J` → ligne de base → chaque doigt/rangée → chiffres → majuscules → ponctuation → phrases → sprint. Chaque leçon n'introduit que quelques nouvelles touches et **débloque la suivante** (1 ⭐ minimum).
+- **6 unités / 21 leçons progressives** sur la carte des niveaux : 🏠 ligne de base → ☝️ index → 🖐️ tous les doigts → 🔢 chiffres → ✍️ écriture réelle → ⚡ vitesse. Chaque leçon n'introduit que quelques nouvelles touches et **débloque la suivante** (1 ⭐ minimum).
+- **Bouton « ▶ Continuer »** en haut du cours pour reprendre directement là où tu t'étais arrêté (raccourci `Entrée` aussi).
+- **Faute bloquante en leçon** (comme TypingClub) : tant que la touche n'est pas la bonne, le curseur n'avance pas — on apprend par la correction. En mode Libre, la faute est simplement marquée.
 - **Étoiles par leçon** : 3 ⭐ à ≥ 95 % de précision, 2 ⭐ à ≥ 85 %, 1 ⭐ à ≥ 70 %.
 - **XP et niveaux de joueur** : chaque session rapporte de l'XP (caractères justes + bonus étoiles), barre de progression vers le niveau suivant dans le header, fanfare 🎉 au passage de niveau.
 - **13 badges** à débloquer (Sans faute, Éclair 80 MPM, Diplômé, série de 7 jours…), avec toast de félicitation.
 - **Série de jours 🔥** : nombre de jours d'entraînement consécutifs.
-- Modale d'intro de leçon (nouvelles touches en couleur de doigt) + écran de résultats animé (étoiles, XP, badges, bouton « Leçon suivante ▶ »).
+- Modale d'intro de leçon (nouvelles touches en couleur de doigt) + écran de résultats animé (étoiles qui pop, XP, badges, **confettis** sur 3 ⭐ ou niveau supérieur, bouton « Leçon suivante ▶ »).
 
 ### 🏋️ Entraînement libre
 - **4 modes** : 🎯 touches (ligne de base → tout le clavier), 📝 mots (facile/normal/difficile), 💬 phrases, ⏱️ chrono 30/60/120 s (texte infini).

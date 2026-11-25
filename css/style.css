@@ -431,3 +431,21 @@ main { max-width: 1100px; margin: 0 auto; padding: 10px 22px 60px; }
   .topbar { justify-content: center; }
   .topnav { flex-wrap: wrap; justify-content: center; }
 }
+
+/* ---------- unités du cours + bouton Continuer + confettis ---------- */
+.btn-continue { margin: 6px 0 16px; font-size: 1.05rem; }
+.lesson-map { display: block; max-width: 1000px; margin: 0 auto; }
+.unit-head {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 1.05rem; font-weight: 800; letter-spacing: -0.01em;
+  margin: 22px 0 12px; padding-bottom: 8px;
+  border-bottom: 1px solid var(--card-border);
+}
+.unit-head:first-child { margin-top: 0; }
+.unit-icon { font-size: 1.25rem; }
+.unit-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px;
+}
+.confetti {
+  position: fixed; inset: 0; z-index: 90; pointer-events: none;
+}

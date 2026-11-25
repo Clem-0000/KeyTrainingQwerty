@@ -90,6 +90,13 @@ ok(globalThis.PHRASES_EN.length >= 20, `PHRASES_EN (${globalThis.PHRASES_EN.leng
 console.log('== cours gamifié ==');
 eq(KTQ.LESSONS.length, 21, '21 leçons dans le cours');
 eq(new Set(KTQ.LESSONS.map(l => l.id)).size, KTQ.LESSONS.length, 'ids de leçons uniques');
+const unitIds = new Set((globalThis.UNITS || []).map(u => u.id));
+ok(KTQ.LESSONS.every(l => unitIds.has(l.unit)), 'chaque leçon appartient à une unité connue');
+eq(new Set(KTQ.LESSONS.map(l => l.unit)).size, unitIds.size, 'toutes les unités contiennent au moins une leçon');
+// les unités forment des blocs contigus dans l'ordre du cours (carte lisible)
+let blocks = 1;
+for (let i = 1; i < KTQ.LESSONS.length; i++) if (KTQ.LESSONS[i].unit !== KTQ.LESSONS[i - 1].unit) blocks++;
+eq(blocks, unitIds.size, `unités contiguës (${blocks} blocs = ${unitIds.size} unités)`);
 KTQ.LESSONS.forEach((l, i) => {
   ok(!!l.name && !!l.desc && !!l.type, `leçon ${l.id}: nom/desc/type présents`);
   const badChars = [...new Set(l.set.split('').filter(c => c !== ' ' && !KTQ.charToCode(c)))];
