@@ -3,7 +3,7 @@
  * Used both as embedded TypingClub World Checkpoints and standalone Arcade games.
  */
 
-import { soundEngine } from './audio.js';
+import { soundEngine } from './audio.js?v=20261125-3';
 
 export class ArcadeController {
   constructor(canvas, { onHudUpdate, onFinish }) {

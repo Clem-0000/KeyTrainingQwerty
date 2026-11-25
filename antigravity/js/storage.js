@@ -2,7 +2,7 @@
  * Keycraft QWERTY V2 — Persistent Gamified Store (XP, 5-Star Stages, Badges, Daily Goal & Heatmap)
  */
 
-import { BADGES, computeXpReward, getRankInfo } from './data/gamification.js';
+import { BADGES, computeXpReward, getRankInfo } from './data/gamification.js?v=20261125-3';
 
 const STORAGE_KEY = 'keycraft_qwerty_v2';
 

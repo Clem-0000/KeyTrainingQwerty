@@ -7,24 +7,24 @@ import {
   resolveKeyGuidance,
   emulateQwertyCharFromCode,
   detectAzertyOsMismatch,
-} from './data/keyboard.js';
+} from './data/keyboard.js?v=20261125-3';
 import {
   WORLDS,
   ALL_STAGES,
   PLACEMENT_TEST_PROMPT,
   WORD_CORPORA,
-} from './data/curriculum.js';
+} from './data/curriculum.js?v=20261125-3';
 import {
   BADGES,
   computeStars,
   getRankInfo,
   ConfettiSystem,
-} from './data/gamification.js';
-import { soundEngine } from './audio.js';
-import { store } from './storage.js';
-import { TypingEngine, buildPracticePrompt } from './engine.js';
-import { HandsOverlay } from './hands.js';
-import { ArcadeController } from './arcade.js';
+} from './data/gamification.js?v=20261125-3';
+import { soundEngine } from './audio.js?v=20261125-3';
+import { store } from './storage.js?v=20261125-3';
+import { TypingEngine, buildPracticePrompt } from './engine.js?v=20261125-3';
+import { HandsOverlay } from './hands.js?v=20261125-3';
+import { ArcadeController } from './arcade.js?v=20261125-3';
 
 const ARCADE_PACKS = {
   home: {

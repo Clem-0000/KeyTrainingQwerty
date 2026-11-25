@@ -2,24 +2,26 @@
  * Benchmark Hub Controller — Switch seamlessly between Antigravity, Mistral 4, and GLM
  */
 
+const VER = 'v=20261125-3';
+
 const CANDIDATES = {
   antigravity: {
     id: 'antigravity',
-    title: 'Antigravity — Keycraft QWERTY',
-    url: './antigravity/index.html',
-    dir: './antigravity/',
+    title: 'Antigravity — Keycraft QWERTY V2',
+    url: `./antigravity/index.html?${VER}`,
+    dir: `./antigravity/index.html?${VER}`,
   },
   mistral: {
     id: 'mistral',
-    title: 'Mistral 4 — KeyTrain',
-    url: './mistral/index.html',
-    dir: './mistral/',
+    title: 'Mistral 4 — KeyTrain V2',
+    url: `./mistral/index.html?${VER}`,
+    dir: `./mistral/index.html?${VER}`,
   },
   glm: {
     id: 'glm',
-    title: 'GLM — QwertyLab',
-    url: './glm/index.html',
-    dir: './glm/',
+    title: 'GLM — QwertyLab V2',
+    url: `./glm/index.html?${VER}`,
+    dir: `./glm/index.html?${VER}`,
   },
 };
 

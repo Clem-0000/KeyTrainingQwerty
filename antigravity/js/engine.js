@@ -2,7 +2,7 @@
  * Keycraft QWERTY V2 — Precision Typing Engine (Combos, Timed Sprints & Speed Timeline)
  */
 
-import { WORD_CORPORA, QUOTES_CORPUS, CODE_SNIPPETS } from './data/curriculum.js';
+import { WORD_CORPORA, QUOTES_CORPUS, CODE_SNIPPETS } from './data/curriculum.js?v=20261125-3';
 
 export class TypingEngine {
   constructor({ onUpdate, onComplete, onKeyResult, onComboMilestone }) {
