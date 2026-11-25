@@ -1,155 +1,212 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" data-theme="light">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>QwertyLab — Entraîneur de frappe hors-ligne</title>
-<link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Banc d’essai IA — Apprendre le clavier QWERTY (Antigravity · Mistral 4 · GLM)</title>
+  <meta
+    name="description"
+    content="Portail comparatif regroupant les trois applications d’apprentissage du clavier QWERTY générées par Antigravity, Mistral 4 et GLM."
+  />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+    rel="stylesheet"
+  />
+  <link rel="stylesheet" href="./hub.css" />
 </head>
 <body>
-
-<div class="scanlines"></div>
-
-<header class="topbar">
-  <div class="logo">Qwerty<span>Lab</span></div>
-  <nav class="tabs" id="tabs">
-    <button class="tab active" data-mode="learn">🎓 Cours</button>
-    <button class="tab" data-mode="drill">⚡ Cadence</button>
-    <button class="tab" data-mode="wordrush">🔥 Mots</button>
-    <button class="tab" data-mode="stats">📊 Stats</button>
-  </nav>
-  <div class="topbar-right">
-    <div class="live-wpm"><span id="liveWpm">0</span><small>WPM</small></div>
-  </div>
-</header>
-
-<main class="layout">
-
-  <!-- ===================== PANEL GAUCHE : CLAVIER + MAINS ===================== -->
-  <aside class="side-panel">
-    <section class="panel hands-panel">
-      <h2>🤚 Placement des doigts</h2>
-      <svg viewBox="0 0 300 130" class="hands" id="handsSvg">
-        <!-- mains stylisées : chaque doigt est un path cliquable/surbrillant -->
-        <g id="hand-left">
-          <path class="finger f-l-pinky" data-finger="l-pinky" d="M28 62 q-14 2 -14 16 q0 14 10 16 q8 2 12 -4 l4 -24 z"/>
-          <path class="finger f-l-ring"  data-finger="l-ring"  d="M52 50 q-10 2 -10 18 q0 16 9 18 q8 2 11 -4 l3 -30 z"/>
-          <path class="finger f-l-mid"   data-finger="l-mid"   d="M76 44 q-9 2 -9 20 q0 17 8 19 q8 2 11 -4 l3 -32 z"/>
-          <path class="finger f-l-index" data-finger="l-index" d="M100 48 q-8 2 -8 18 q0 15 8 17 q8 2 11 -4 l3 -28 z"/>
-          <ellipse class="finger f-l-thumb" data-finger="l-thumb" cx="118" cy="102" rx="14" ry="9"/>
-        </g>
-        <g id="hand-right">
-          <path class="finger f-r-pinky" data-finger="r-pinky" d="M272 62 q14 2 14 16 q0 14 -10 16 q-8 2 -12 -4 l-4 -24 z"/>
-          <path class="finger f-r-ring"  data-finger="r-ring"  d="M248 50 q10 2 10 18 q0 16 -9 18 q-8 2 -11 -4 l-3 -30 z"/>
-          <path class="finger f-r-mid"   data-finger="r-mid"   d="M224 44 q9 2 9 20 q0 17 -8 19 q-8 2 -11 -4 l-3 -32 z"/>
-          <path class="finger f-r-index" data-finger="r-index" d="M200 48 q8 2 8 18 q0 15 -8 17 q-8 2 -11 -4 l-3 -28 z"/>
-          <ellipse class="finger f-r-thumb" data-finger="r-thumb" cx="182" cy="102" rx="14" ry="9"/>
-        </g>
-        <text x="150" y="120" class="hands-hint" id="handsHint">Pose tes mains : index sur F et J</text>
-      </svg>
-    </section>
-
-    <section class="panel keyboard-panel">
-      <h2>⌨️ Clavier</h2>
-      <div class="keyboard" id="keyboard"></div>
-    </section>
-
-    <section class="panel tips-panel">
-      <h2>💡 Conseil</h2>
-      <p class="tip" id="tip">Ne regarde pas tes mains. Trouve les petites bosses sur F et J : ce sont tes points d'ancrage.</p>
-    </section>
-  </aside>
-
-  <!-- ===================== ZONE PRINCIPALE ===================== -->
-  <section class="main-area">
-
-    <!-- MODE COURS -->
-    <div class="view" id="view-learn">
-      <div class="lesson-grid" id="lessonGrid"></div>
-    </div>
-
-    <!-- ZONE D'ENTRAINEMENT (partagée learn / drill / wordrush) -->
-    <div class="view hidden" id="view-session">
-      <div class="session-head">
-        <button class="btn back" id="btnBack">← Quitter</button>
-        <h2 class="lesson-title" id="lessonTitle">Leçon</h2>
-        <div class="session-metrics">
-          <div class="metric"><small>Précision</small><b id="mAcc">100%</b></div>
-          <div class="metric"><small>Erreurs</small><b id="mErr">0</b></div>
-          <div class="metric"><small>Temps</small><b id="mTime">0:00</b></div>
-          <div class="metric"><small>WPM</small><b id="mWpm">0</b></div>
+  <!-- =======================================================================
+       VUE GALERIE D'ACCUEIL (3 PROPOSITIONS CÔTE À CÔTE)
+       ======================================================================= -->
+  <main class="hub-landing" id="hub-landing">
+    <header class="hub-topbar">
+      <div class="hub-brand">
+        <div class="hub-keycap" aria-hidden="true">QW</div>
+        <div>
+          <div style="font-weight:700; font-size:0.95rem;">KeyTrainingQwerty</div>
+          <div class="hub-kicker">Comparateur des 3 réalisations IA</div>
         </div>
       </div>
 
-      <div class="race-track">
-        <div class="race-car" id="raceCar">🚗</div>
-        <div class="race-finish">🏁</div>
-      </div>
+      <button type="button" class="theme-btn" id="landing-theme-btn" data-toggle-theme>
+        Thème sombre
+      </button>
+    </header>
 
-      <div class="text-display" id="textDisplay" tabindex="0"></div>
+    <section class="hub-hero">
+      <h1>Quel site vous fera le mieux maîtriser le QWERTY ?</h1>
+      <p>
+        Comparez en un clic les trois applications générées indépendamment sans modification de leur code interne,
+        directement dans le comparateur intégré ou en pleine page dédiée.
+      </p>
+    </section>
 
-      <div class="session-actions">
-        <button class="btn ghost" id="btnRestart">↻ Recommencer</button>
-        <p class="hint">Tape le texte ci-dessus — <b>Échap</b> pour quitter</p>
-      </div>
-
-      <div class="result hidden" id="result">
-        <div class="result-card">
-          <h3 id="resultTitle">Terminé !</h3>
-          <div class="result-grid">
-            <div class="r-metric"><b id="rWpm">0</b><small>WPM</small></div>
-            <div class="r-metric"><b id="rAcc">0%</b><small>Précision</small></div>
-            <div class="r-metric"><b id="rTime">0s</b><small>Temps</small></div>
-            <div class="r-metric"><b id="rErr">0</b><small>Erreurs</small></div>
+    <section class="candidates-grid" aria-label="Sélection du modèle IA">
+      <!-- 1. ANTIGRAVITY -->
+      <article class="candidate-card">
+        <div>
+          <div class="card-meta-row">
+            <span class="model-tag">Antigravity</span>
+            <span class="branch-tag">branche : antigravity</span>
           </div>
-          <div class="result-keys" id="resultKeys"></div>
-          <div class="result-actions">
-            <button class="btn" id="btnAgain">Rejouer</button>
-            <button class="btn primary" id="btnNext">Suivant →</button>
+          <h2>Keycraft QWERTY</h2>
+          <p class="candidate-desc">
+            Studio tactile pensé pour les francophones passant au QWERTY : ergonomie 10 doigts, code et accents US-International.
+          </p>
+          <ul class="feature-list">
+            <li>Parcours de 24 leçons (Home Row, pièges AZERTY → QWERTY, code, accents FR)</li>
+            <li>Clavier mécanique ANSI 60 colonnes + mains SVG &amp; guidage des touches mortes</li>
+            <li>Mode aveugle, émulation physique QWERTY (OS AZERTY), Drill adaptatif &amp; Heatmap</li>
+          </ul>
+        </div>
+        <div class="card-actions">
+          <button
+            type="button"
+            class="btn-compare"
+            id="launch-antigravity-btn"
+            data-launch-target="antigravity"
+          >
+            Ouvrir dans le comparateur
+          </button>
+          <a href="./antigravity/" class="btn-standalone" id="standalone-antigravity-link">
+            Pleine page ↗
+          </a>
+        </div>
+      </article>
+
+      <!-- 2. MISTRAL 4 -->
+      <article class="candidate-card">
+        <div>
+          <div class="card-meta-row">
+            <span class="model-tag">Mistral 4</span>
+            <span class="branch-tag">keytrain-offline (45df01a)</span>
           </div>
+          <h2>KeyTrain</h2>
+          <p class="candidate-desc">
+            Entraîneur de frappe QWERTY 100 % local orienté progression par leçons et modes chronométrés variés.
+          </p>
+          <ul class="feature-list">
+            <li>Cours progressifs, modes Mots FR/EN, Citations et Code</li>
+            <li>Clavier visuel interactif avec repères de doigts et audio activable</li>
+            <li>Graphique d’évolution en fin de session et suivi des statistiques locales</li>
+          </ul>
         </div>
-      </div>
-    </div>
-
-    <!-- MODE MOTS (config) -->
-    <div class="view hidden" id="view-wordrush">
-      <div class="center-card">
-        <h2>🔥 Mots brûlants</h2>
-        <p>Enchaîne des mots aléatoires le plus vite possible. Choisis ta discipline :</p>
-        <div class="btn-row">
-          <button class="btn big" data-rush="30">30 s</button>
-          <button class="btn big" data-rush="60">60 s</button>
-          <button class="btn big" data-rush="120">2 min</button>
+        <div class="card-actions">
+          <button
+            type="button"
+            class="btn-compare"
+            id="launch-mistral-btn"
+            data-launch-target="mistral"
+          >
+            Ouvrir dans le comparateur
+          </button>
+          <a href="./mistral/" class="btn-standalone" id="standalone-mistral-link">
+            Pleine page ↗
+          </a>
         </div>
+      </article>
+
+      <!-- 3. GLM -->
+      <article class="candidate-card">
+        <div>
+          <div class="card-meta-row">
+            <span class="model-tag">GLM</span>
+            <span class="branch-tag">trainer-pro / main (109e106)</span>
+          </div>
+          <h2>QwertyLab</h2>
+          <p class="candidate-desc">
+            Interface hors-ligne avec panneau latéral mains + clavier permanent et ateliers rythmiques.
+          </p>
+          <ul class="feature-list">
+            <li>4 onglets dédiés : Cours, Cadence (métronome), Word Rush et Stats</li>
+            <li>Visualisation permanente des mains et du clavier en panneau latéral</li>
+            <li>Suivi instantané du WPM dans la barre supérieure</li>
+          </ul>
+        </div>
+        <div class="card-actions">
+          <button
+            type="button"
+            class="btn-compare"
+            id="launch-glm-btn"
+            data-launch-target="glm"
+          >
+            Ouvrir dans le comparateur
+          </button>
+          <a href="./glm/" class="btn-standalone" id="standalone-glm-link">
+            Pleine page ↗
+          </a>
+        </div>
+      </article>
+    </section>
+
+    <footer class="hub-note">
+      <span>
+        Chaque version conserve l’intégralité de ses fichiers d’origine dans son sous-dossier dédié
+        (<code>/antigravity/</code>, <code>/mistral/</code>, <code>/glm/</code>).
+      </span>
+      <span class="hub-kicker">Compatible Aperçu Cloud &amp; GitHub Pages</span>
+    </footer>
+  </main>
+
+  <!-- =======================================================================
+       VUE COMPARATEUR EN DIRECT (BARRE DE BASCULE + IFRAME PLEIN ÉCRAN)
+       ======================================================================= -->
+  <section class="comparator-shell" id="comparator-shell" hidden aria-label="Comparateur interactif">
+    <div class="comparator-bar">
+      <button type="button" class="back-hub-btn" id="back-to-hub-btn">
+        ← Accueil des 3 versions
+      </button>
+
+      <div class="switcher-pills" role="tablist" aria-label="Basculer entre les IA">
+        <button
+          type="button"
+          class="switch-pill is-active"
+          id="pill-antigravity"
+          data-switch-target="antigravity"
+        >
+          Antigravity · Keycraft
+        </button>
+        <button
+          type="button"
+          class="switch-pill"
+          id="pill-mistral"
+          data-switch-target="mistral"
+        >
+          Mistral 4 · KeyTrain
+        </button>
+        <button
+          type="button"
+          class="switch-pill"
+          id="pill-glm"
+          data-switch-target="glm"
+        >
+          GLM · QwertyLab
+        </button>
+      </div>
+
+      <div class="comparator-right">
+        <a
+          href="./antigravity/"
+          target="_blank"
+          rel="noopener"
+          class="open-direct-link"
+          id="comparator-direct-link"
+        >
+          Ouvrir seul ↗
+        </a>
       </div>
     </div>
 
-    <!-- MODE STATS -->
-    <div class="view hidden" id="view-stats">
-      <div class="stats-head">
-        <h2>📊 Tes progrès</h2>
-        <button class="btn danger" id="btnClearStats">Effacer l'historique</button>
-      </div>
-      <div class="stat-cards" id="statCards"></div>
-      <div class="chart-wrap panel">
-        <h3>Évolution WPM</h3>
-        <svg id="chart" viewBox="0 0 600 200" preserveAspectRatio="none"></svg>
-      </div>
-      <div class="chart-wrap panel">
-        <h3>Touches à travailler</h3>
-        <div class="weak-keys" id="weakKeys"></div>
-      </div>
-    </div>
-
+    <iframe
+      id="comparator-iframe"
+      class="comparator-frame"
+      title="Aperçu interactif de l'entraîneur QWERTY sélectionné"
+      src="about:blank"
+    ></iframe>
   </section>
-</main>
 
-<footer class="footer">
-  100 % hors-ligne — aucune ressource externe, tes stats restent dans ton navigateur.
-</footer>
-
-<div class="hidden" id="focus-mask"><div>Clique ici et tape !</div></div>
-
-<script src="app.js"></script>
+  <script type="module" src="./hub.js"></script>
 </body>
 </html>

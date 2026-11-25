@@ -1,32 +1,17 @@
-# ⌨️ QwertyLab — Entraîneur de frappe QWERTY hors-ligne
+# KeyTrainingQwerty — Comparateur des 3 réalisations IA
 
-Trainer de dactylo au design néon, **100 % hors-ligne** (aucune ressource externe, aucun appel réseau) — parfait derrière un proxy d'entreprise.
+Portail d’accueil unifié permettant de tester et comparer trois sites d’apprentissage du clavier **QWERTY** générés indépendamment :
 
-## Lancer
+| Modèle | Application | Dossier | Origine Git |
+| :--- | :--- | :--- | :--- |
+| **Antigravity** | **Keycraft QWERTY** | [`./antigravity/`](./antigravity/) | Branche `antigravity` (`344f6bc`) |
+| **Mistral 4** | **KeyTrain** | [`./mistral/`](./mistral/) | Branche `vibe/keytrain-offline-cae9ad` (`45df01a`, version originale avant fusion PR #2) |
+| **GLM** | **QwertyLab** | [`./glm/`](./glm/) | Branche `vibe/trainer-pro-caba27` / `main` (`109e106`) |
 
-Ouvre simplement `index.html` dans ton navigateur (`file://` fonctionne). Ou :
+## Accès en ligne (GitHub Pages)
 
-```bash
-python3 -m http.server 8000
-# puis http://localhost:8000
-```
-
-## Fonctionnalités
-
-- 🎓 **Cours progressifs** — 11 leçons, de la rangée de base (`asdf jkl;`) jusqu'aux phrases complètes, avec étoiles et meilleur WPM par leçon.
-- ⚡ **Cadence ciblée** — génère automatiquement des mots contenant **tes touches les plus faibles**.
-- 🔥 **Mots brûlants** — sprint de 30 s / 60 s / 2 min sur des mots aléatoires.
-- 🤚 **Guide de placement** — schéma des mains : le doigt recommandé s'illumine pour chaque caractère.
-- ⌨️ **Clavier virtuel** — la touche à presser s'illumine, code couleur par doigt, bosses F/J affichées.
-- 📊 **Stats locales** — historique, courbe WPM/précision (SVG), classement des touches à retravailler. Tout reste dans `localStorage`.
-- 🚗 **Piste de course** — barre de progression ludique pendant la frappe.
-
-## Raccourcis
-
-| Touche | Action |
-|---|---|
-| `Échap` | Quitter la session |
-| `Tab` | Recommencer |
-| `Entrée` (sur résultat) | Rejouer |
-
-Aucune dépendance, aucun build. HTML/CSS/JS vanilla.
+- Portail comparateur : **https://clem-0000.github.io/KeyTrainingQwerty/**
+- Accès directs pleine page :
+  - `https://clem-0000.github.io/KeyTrainingQwerty/antigravity/`
+  - `https://clem-0000.github.io/KeyTrainingQwerty/mistral/`
+  - `https://clem-0000.github.io/KeyTrainingQwerty/glm/`

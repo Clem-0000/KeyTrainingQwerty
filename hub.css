@@ -1,0 +1,392 @@
+/* ==========================================================================
+   BENCHMARK HUB — Editorial Showcase & Live Switcher (Antigravity / Mistral 4 / GLM)
+   ========================================================================== */
+
+:root {
+  --bg: hsl(40, 22%, 95%);
+  --surface: hsl(40, 28%, 98%);
+  --surface-muted: hsl(38, 16%, 90%);
+  --ink: hsl(35, 14%, 12%);
+  --ink-secondary: hsl(35, 9%, 37%);
+  --ink-muted: hsl(35, 7%, 54%);
+  --border: hsla(35, 15%, 16%, 0.11);
+  --border-strong: hsla(35, 15%, 16%, 0.2);
+
+  --accent: hsl(16, 80%, 48%);
+  --accent-ink: hsl(40, 33%, 98%);
+  --accent-soft: hsla(16, 80%, 48%, 0.11);
+
+  --shadow-card: 0 2px 4px hsla(32, 20%, 12%, 0.04), 0 10px 26px -10px hsla(32, 20%, 12%, 0.09);
+  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+[data-theme="dark"] {
+  --bg: hsl(38, 6%, 9%);
+  --surface: hsl(38, 6%, 13%);
+  --surface-muted: hsl(38, 5%, 16.5%);
+  --ink: hsl(38, 20%, 92%);
+  --ink-secondary: hsl(38, 10%, 68%);
+  --ink-muted: hsl(38, 7%, 48%);
+  --border: hsla(38, 20%, 90%, 0.09);
+  --border-strong: hsla(38, 20%, 90%, 0.17);
+
+  --accent: hsl(16, 84%, 56%);
+  --accent-soft: hsla(16, 84%, 56%, 0.16);
+  --shadow-card: 0 4px 16px hsla(0, 0%, 0%, 0.35);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  background-color: var(--bg);
+  background-image: radial-gradient(hsla(36, 20%, 50%, 0.04) 1px, transparent 0);
+  background-size: 22px 22px;
+  color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+button,
+a {
+  font-family: inherit;
+}
+
+/* ==========================================================================
+   Gallery / Hub Landing View
+   ========================================================================== */
+
+.hub-landing {
+  max-width: 1140px;
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem 3.5rem;
+}
+
+.hub-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 1.75rem;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 2.5rem;
+  flex-wrap: wrap;
+}
+
+.hub-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.hub-keycap {
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  box-shadow: 0 3px 0 var(--surface-muted), 0 4px 8px hsla(0, 0%, 0%, 0.08);
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 0.95rem;
+  display: grid;
+  place-items: center;
+}
+
+.hub-kicker {
+  font-family: var(--font-mono);
+  font-size: 0.73rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-muted);
+}
+
+.theme-btn {
+  height: 34px;
+  padding: 0 0.75rem;
+  border-radius: 6px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--ink-secondary);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.theme-btn:hover {
+  color: var(--ink);
+}
+
+.hub-hero {
+  max-width: 68ch;
+  margin-bottom: 2.5rem;
+}
+
+.hub-hero h1 {
+  margin: 0 0 0.65rem;
+  font-size: clamp(1.75rem, 3.2vw, 2.4rem);
+  line-height: 1.15;
+  letter-spacing: -0.03em;
+}
+
+.hub-hero p {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--ink-secondary);
+}
+
+/* 3-Column Equal Candidate Grid */
+.candidates-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(310px, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 2.25rem;
+}
+
+.candidate-card {
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 14px;
+  padding: 1.4rem;
+  box-shadow: var(--shadow-card);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 1.25rem;
+  transition: transform 150ms ease, box-shadow 150ms ease;
+}
+
+.candidate-card:hover {
+  transform: translateY(-3px);
+}
+
+.card-meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.65rem;
+}
+
+.model-tag {
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  font-weight: 700;
+  padding: 0.2rem 0.55rem;
+  border-radius: 5px;
+  background: var(--surface-muted);
+  color: var(--ink);
+}
+
+.branch-tag {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--ink-muted);
+}
+
+.candidate-card h2 {
+  margin: 0 0 0.45rem;
+  font-size: 1.25rem;
+  letter-spacing: -0.02em;
+}
+
+.candidate-desc {
+  margin: 0 0 0.95rem;
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: var(--ink-secondary);
+}
+
+.feature-list {
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: 0.82rem;
+  line-height: 1.65;
+  color: var(--ink-secondary);
+}
+
+.card-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+
+.btn-compare {
+  flex: 1;
+  height: 38px;
+  border: none;
+  border-radius: 8px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 0.83rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 2px 0 hsl(16, 76%, 34%);
+  transition: filter 120ms ease, transform 80ms ease;
+}
+
+.btn-compare:hover {
+  filter: brightness(1.06);
+}
+
+.btn-compare:active {
+  transform: translateY(1px);
+}
+
+.btn-standalone {
+  height: 38px;
+  padding: 0 0.85rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-strong);
+  background: transparent;
+  color: var(--ink);
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  transition: background-color 120ms ease;
+}
+
+.btn-standalone:hover {
+  background: var(--surface-muted);
+}
+
+.hub-note {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.95rem 1.2rem;
+  font-size: 0.83rem;
+  color: var(--ink-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+/* ==========================================================================
+   Full-Viewport Live Comparator Mode
+   ========================================================================== */
+
+.comparator-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+}
+
+.comparator-shell[hidden],
+.hub-landing[hidden] {
+  display: none !important;
+}
+
+.comparator-bar {
+  height: 46px;
+  flex-shrink: 0;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border-strong);
+  padding: 0 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.back-hub-btn {
+  height: 30px;
+  padding: 0 0.65rem;
+  border-radius: 6px;
+  border: 1px solid var(--border-strong);
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.back-hub-btn:hover {
+  background: var(--surface-muted);
+}
+
+.switcher-pills {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: var(--surface-muted);
+  padding: 0.2rem;
+  border-radius: 7px;
+}
+
+.switch-pill {
+  border: none;
+  background: transparent;
+  height: 28px;
+  padding: 0 0.8rem;
+  border-radius: 5px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--ink-secondary);
+  cursor: pointer;
+  transition: all 120ms ease;
+}
+
+.switch-pill:hover {
+  color: var(--ink);
+}
+
+.switch-pill.is-active {
+  background: var(--surface);
+  color: var(--accent);
+  box-shadow: 0 1px 2px hsla(0, 0%, 0%, 0.08);
+}
+
+.comparator-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.open-direct-link {
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--ink-secondary);
+  text-decoration: none;
+  padding: 0.28rem 0.6rem;
+  border-radius: 5px;
+  border: 1px solid var(--border-strong);
+}
+
+.open-direct-link:hover {
+  color: var(--ink);
+  background: var(--surface-muted);
+}
+
+.comparator-frame {
+  flex: 1;
+  width: 100%;
+  border: none;
+  background: #fff;
+}
+
+@media (max-width: 680px) {
+  .comparator-bar {
+    height: auto;
+    padding: 0.45rem 0.65rem;
+    flex-wrap: wrap;
+  }
+}

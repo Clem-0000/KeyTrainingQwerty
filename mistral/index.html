@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="KeyTrain — entraîneur de frappe QWERTY 100 % local, aucune connexion Internet requise.">
+  <title>KeyTrain — Frappe QWERTY 100 % local</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⌨️</text></svg>">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="bg-blobs" aria-hidden="true"><span></span><span></span><span></span></div>
+  <div class="bg-grid" aria-hidden="true"></div>
+
+  <header class="topbar">
+    <div class="logo" id="logo-home" role="button" tabindex="0" title="Retour à l'accueil">
+      <span class="logo-icon">⌨</span>
+      <span class="logo-text">Key<em>Train</em></span>
+      <span class="logo-badge">100&nbsp;% local</span>
+    </div>
+    <nav class="topnav">
+      <button class="nav-btn" id="btn-stats" type="button">📊 Progression</button>
+      <button class="nav-btn" id="btn-sound" type="button" aria-pressed="true">🔊 Son</button>
+    </nav>
+  </header>
+
+  <main>
+    <!-- ============ ACCUEIL ============ -->
+    <section id="view-home" class="view">
+      <div class="hero">
+        <h1 class="hero-title">Tape <span class="grad">plus vite</span>.<br>Bien <span class="grad2">place tes doigts</span>.</h1>
+        <p class="hero-sub">Un entraîneur de frappe QWERTY entièrement hors-ligne : aucun site externe, aucune connexion.
+        Juste toi, ton clavier et ta progression.</p>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h2>Choisis ton exercice</h2>
+          <div class="lang-switch" role="group" aria-label="Langue">
+            <button class="chip lang-chip active" data-lang="fr" type="button">🇫🇷 FR</button>
+            <button class="chip lang-chip" data-lang="en" type="button">🇬🇧 EN</button>
+          </div>
+        </div>
+
+        <div class="mode-grid">
+          <div class="mode-card active" data-mode="keys" role="button" tabindex="0">
+            <span class="mode-icon">🎯</span>
+            <span class="mode-name">Touches</span>
+            <span class="mode-desc">Ligne de base <b>ASDF&nbsp;JKL;</b> puis toutes les rangées. Parfait pour placer les doigts.</span>
+            <span class="mode-levels" data-levels="keys">
+              <button class="chip sub active" data-level="home" type="button">Ligne de base</button>
+              <button class="chip sub" data-level="top" type="button">+ Rangée haute</button>
+              <button class="chip sub" data-level="all" type="button">Tout le clavier</button>
+            </span>
+          </div>
+
+          <div class="mode-card" data-mode="words" role="button" tabindex="0">
+            <span class="mode-icon">📝</span>
+            <span class="mode-name">Mots</span>
+            <span class="mode-desc">Des mots aléatoires pour enchaîner les frappes sans réfléchir.</span>
+            <span class="mode-levels" data-levels="words">
+              <button class="chip sub active" data-level="easy" type="button">Facile</button>
+              <button class="chip sub" data-level="normal" type="button">Normal</button>
+              <button class="chip sub" data-level="hard" type="button">Difficile</button>
+            </span>
+          </div>
+
+          <div class="mode-card" data-mode="phrases" role="button" tabindex="0">
+            <span class="mode-icon">💬</span>
+            <span class="mode-name">Phrases</span>
+            <span class="mode-desc">Des phrases complètes : rythme, ponctuation et majuscules.</span>
+          </div>
+
+          <div class="mode-card" data-mode="time" role="button" tabindex="0">
+            <span class="mode-icon">⏱️</span>
+            <span class="mode-name">Chrono</span>
+            <span class="mode-desc">Un sprint chronométré, comme sur les vrais tests de vitesse.</span>
+            <span class="mode-levels" data-levels="time">
+              <button class="chip sub" data-duration="30" type="button">30 s</button>
+              <button class="chip sub active" data-duration="60" type="button">60 s</button>
+              <button class="chip sub" data-duration="120" type="button">120 s</button>
+            </span>
+          </div>
+        </div>
+
+        <div class="home-actions">
+          <button class="btn-primary" id="btn-start" type="button">Commencer <span class="kbd-hint">Entrée</span></button>
+          <label class="switch-label">
+            <input type="checkbox" id="opt-keyboard" checked>
+            <span>Afficher le clavier</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="best-strip" id="best-strip" hidden>
+        <span>🏆 Records personnels :</span>
+        <span id="best-strip-content"></span>
+      </div>
+    </section>
+
+    <!-- ============ ENTRAÎNEMENT ============ -->
+    <section id="view-train" class="view" hidden>
+      <div class="hud">
+        <div class="hud-item"><span class="hud-label">Vitesse</span><span class="hud-value" id="hud-wpm">0</span><span class="hud-unit">MPM</span></div>
+        <div class="hud-item"><span class="hud-label">Précision</span><span class="hud-value" id="hud-acc">100</span><span class="hud-unit">%</span></div>
+        <div class="hud-item"><span class="hud-label">Erreurs</span><span class="hud-value err" id="hud-err">0</span><span class="hud-unit"></span></div>
+        <div class="hud-item"><span class="hud-label">Temps</span><span class="hud-value" id="hud-time">0:00</span><span class="hud-unit"></span></div>
+        <button class="nav-btn hud-quit" id="btn-quit" type="button" title="Quitter l'exercice">✕ Quitter</button>
+      </div>
+
+      <div class="progress"><div class="progress-bar" id="progress-bar"></div></div>
+
+      <div class="text-zone">
+        <div class="text-display" id="text-display" aria-label="Texte à taper"></div>
+      </div>
+
+      <div class="kb-zone" id="kb-zone">
+        <div class="finger-legend" id="finger-legend"></div>
+        <div class="keyboard" id="keyboard"></div>
+      </div>
+    </section>
+
+    <!-- ============ PROGRESSION ============ -->
+    <section id="view-stats" class="view" hidden>
+      <div class="panel wide">
+        <div class="panel-head">
+          <h2>📊 Ta progression</h2>
+          <button class="nav-btn" id="btn-stats-back" type="button">← Retour</button>
+        </div>
+        <div class="stats-cards" id="stats-cards"></div>
+        <div class="chart-block">
+          <h3>Vitesse au fil des sessions (MPM)</h3>
+          <canvas id="stats-chart" height="180"></canvas>
+        </div>
+        <div class="chart-block">
+          <h3>🔥 Carte de chaleur des erreurs (tes touches faibles)</h3>
+          <div class="keyboard heat" id="keyboard-heat"></div>
+          <p class="heat-hint">Plus une touche est rouge, plus tu te trompes dessus. Travaille ces touches en mode « Touches ».</p>
+        </div>
+        <button class="btn-danger" id="btn-clear-history" type="button">Effacer mon historique</button>
+      </div>
+    </section>
+  </main>
+
+  <!-- ============ MODALE RÉSULTATS ============ -->
+  <div class="modal-overlay" id="results-modal" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="res-title">
+      <div class="record-banner" id="record-banner" hidden>🏆 Nouveau record personnel !</div>
+      <h2 id="res-title">Résultats</h2>
+      <div class="res-hero">
+        <div class="res-wpm"><span id="res-wpm">0</span><span class="res-wpm-unit">MPM</span></div>
+        <div class="res-sub" id="res-sub">mots par minute</div>
+      </div>
+      <div class="res-grid">
+        <div class="res-cell"><span class="res-num" id="res-acc">0%</span><span class="res-lab">Précision</span></div>
+        <div class="res-cell"><span class="res-num err" id="res-err">0</span><span class="res-lab">Erreurs</span></div>
+        <div class="res-cell"><span class="res-num" id="res-chars">0</span><span class="res-lab">Caractères justes</span></div>
+        <div class="res-cell"><span class="res-num" id="res-time">0:00</span><span class="res-lab">Durée</span></div>
+      </div>
+      <div class="res-chart-block">
+        <canvas id="res-chart" height="110"></canvas>
+      </div>
+      <div class="res-actions">
+        <button class="btn-primary" id="btn-again" type="button">🔁 Rejouer</button>
+        <button class="nav-btn" id="btn-home" type="button">🏠 Accueil</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/words-fr.js"></script>
+  <script src="js/words-en.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
