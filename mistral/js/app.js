@@ -8,11 +8,13 @@
   /* ---------------- données ---------------- */
   var WORDS = { fr: globalThis.WORDS_FR || [], en: globalThis.WORDS_EN || [] };
   var PHRASES = { fr: globalThis.PHRASES_FR || [], en: globalThis.PHRASES_EN || [] };
+  var LESSONS = globalThis.LESSONS || [];
+  var BADGES = globalThis.BADGES || [];
 
   /* ---------------- utilitaires purs ---------------- */
   function rand(n) { return Math.floor(Math.random() * n); }
 
-  // Retire les accents (compatibilité toutes dispositions de clavier : QWERTY US, FR, etc.)
+  // Retire les accents (compatibilité toutes dispositions de clavier)
   function normalize(s) {
     return s.normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '')
@@ -25,20 +27,24 @@
     return out;
   }
 
-  // Génération de textes selon le mode
+  // Génère un exercice à partir d'un ensemble de caractères autorisé
+  function genFromSet(set, len) {
+    var out = '';
+    while (out.length < len) {
+      var g = 3 + rand(4);
+      for (var i = 0; i < g; i++) out += set[rand(set.length)];
+      out += ' ';
+    }
+    return out.trim();
+  }
+
   function genKeys(level) {
     var sets = {
       home: 'asdfjkl;',
       top: 'asdfjkl;qwertyuiop',
       all: '1234567890qwertyuiopasdfghjkl;zxcvbnm,./'
     };
-    var set = sets[level] || sets.home, out = '';
-    while (out.length < 150) {
-      var g = 3 + rand(4);
-      for (var i = 0; i < g; i++) out += set[rand(set.length)];
-      out += ' ';
-    }
-    return out.trim();
+    return genFromSet(sets[level] || sets.home, 150);
   }
 
   function wordPool(lang, level) {
@@ -59,8 +65,8 @@
     return out.join(' ');
   }
 
-  function genPhrases(lang) {
-    return pickN(PHRASES[lang] || PHRASES.en, 10)
+  function genPhrases(lang, n) {
+    return pickN(PHRASES[lang] || PHRASES.en, n || 10)
       .map(function (p) { return lang === 'fr' ? normalize(p) : p; })
       .join(' ');
   }
@@ -71,6 +77,29 @@
     if (mode === 'phrases') return genPhrases(opts.lang || 'fr');
     if (mode === 'time') return genWords(opts.lang || 'fr', 'normal', 90);
     return genWords(opts.lang || 'fr', opts.level || 'easy', 60);
+  }
+
+  // Texte d'une leçon du cours
+  function genLessonText(lesson, lang) {
+    if (!lesson) return genWords(lang, 'easy', 60);
+    if (lesson.type === 'keys') return genFromSet(lesson.set, 120);
+    if (lesson.type === 'words') {
+      var set = lesson.set;
+      var pool = wordPool(lang, 'normal').filter(function (w) {
+        return w.split('').every(function (c) { return set.indexOf(c) !== -1; });
+      });
+      if (pool.length < 8) return genFromSet(set, 150);
+      var out = [];
+      for (var i = 0; i < 40; i++) {
+        var w = pool[rand(pool.length)];
+        if (lesson.caps && Math.random() < 0.4) w = w[0].toUpperCase() + w.slice(1);
+        out.push(w);
+      }
+      return out.join(' ');
+    }
+    if (lesson.type === 'phrases') return genPhrases(lang, 6);
+    if (lesson.type === 'time') return genWords(lang, 'normal', 90);
+    return genWords(lang, 'easy', 60);
   }
 
   /* ---------------- métriques ---------------- */
@@ -86,6 +115,31 @@
     var s = Math.max(0, Math.round(totalSec));
     var m = Math.floor(s / 60);
     return m + ':' + String(s % 60).padStart(2, '0');
+  }
+
+  /* ---------------- gamification (pur) ---------------- */
+  function starsFor(acc) { return acc >= 95 ? 3 : acc >= 85 ? 2 : acc >= 70 ? 1 : 0; }
+  function playerLevel(xp) { return 1 + Math.floor(Math.sqrt(Math.max(0, xp) / 100)); }
+  function xpBounds(xp) {
+    var L = playerLevel(xp);
+    return [100 * (L - 1) * (L - 1), 100 * L * L, L];
+  }
+  function isUnlocked(stars, i) { return i === 0 || (stars[LESSONS[i - 1].id] || 0) >= 1; }
+  function totalStars(stars) {
+    var t = 0;
+    Object.keys(stars).forEach(function (k) { t += stars[k]; });
+    return t;
+  }
+  function dayStr(d) {
+    d = d || new Date();
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+  function nextStreak(streak) {
+    var today = dayStr();
+    if (streak.last === today) return streak;
+    var y = new Date(); y.setDate(y.getDate() - 1);
+    var count = streak.last === dayStr(y) ? streak.count + 1 : 1;
+    return { last: today, count: count };
   }
 
   /* ---------------- clavier QWERTY ---------------- */
@@ -129,7 +183,7 @@
     { id: 'ri', name: 'Index D', keys: '6 7 Y H U J N M' },
     { id: 'rm', name: 'Majeur D', keys: '8 I K ,' },
     { id: 'rr', name: 'Annulaire D', keys: '9 O L .' },
-    { id: 'rp', name: 'Auriculaire D', keys: '0 P ; \' …' },
+    { id: 'rp', name: 'Auriculaire D', keys: "0 P ; ' …" },
     { id: 'th', name: 'Pouces', keys: 'Espace' }
   ];
 
@@ -158,7 +212,7 @@
   }
 
   /* ---------------- stockage local ---------------- */
-  var LS_HISTORY = 'ktq_history', LS_ERRORS = 'ktq_errors', LS_SETTINGS = 'ktq_settings';
+  var LS_HISTORY = 'ktq_history', LS_ERRORS = 'ktq_errors', LS_GAME = 'ktq_game';
   function lsGet(key, fallback) {
     try { var v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; }
     catch (e) { return fallback; }
@@ -167,10 +221,38 @@
     try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) { /* mode privé etc. */ }
   }
 
+  /* ---------------- état du jeu ---------------- */
+  function defaultGame() {
+    return {
+      xp: 0,
+      stars: {},        // lessonId -> 0..3
+      badges: {},       // badgeId -> timestamp
+      streak: { last: null, count: 0 },
+      totalSessions: 0,
+      langs: {},
+      settings: { sound: true, showKb: true }
+    };
+  }
+  var G = lsGet(LS_GAME, null) || defaultGame();
+  if (!G.settings) G.settings = { sound: true, showKb: true };
+  function saveGame() { lsSet(LS_GAME, G); }
+
+  function checkBadges(game, ctx) {
+    var earned = [];
+    BADGES.forEach(function (b) {
+      if (!game.badges[b.id]) {
+        var ok = false;
+        try { ok = b.test(game, ctx); } catch (e) { ok = false; }
+        if (ok) { game.badges[b.id] = Date.now(); earned.push(b); }
+      }
+    });
+    return earned;
+  }
+
   /* ---------------- sons (WebAudio, aucun fichier) ---------------- */
   var audioCtx = null;
   function sfx(kind) {
-    if (!ui.sound) return;
+    if (!G.settings.sound) return;
     try {
       audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
       if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -185,26 +267,27 @@
       }
       if (kind === 'ok') tone(660 + rand(60), 0.07, 'sine', 0.06, 0);
       else if (kind === 'bad') tone(150, 0.13, 'sawtooth', 0.07, 0);
+      else if (kind === 'star') tone(880, 0.12, 'triangle', 0.09, 0);
+      else if (kind === 'levelup') { tone(523, 0.12, 'triangle', 0.09, 0); tone(659, 0.12, 'triangle', 0.09, 0.1); tone(784, 0.12, 'triangle', 0.09, 0.2); tone(1047, 0.25, 'triangle', 0.1, 0.3); }
       else if (kind === 'finish') { tone(523, 0.14, 'triangle', 0.09, 0); tone(659, 0.14, 'triangle', 0.09, 0.12); tone(784, 0.22, 'triangle', 0.1, 0.24); }
     } catch (e) { /* audio indisponible : on ignore */ }
   }
 
   /* ---------------- état UI / session ---------------- */
   var ui = {
-    view: 'home',
-    mode: 'words',
+    view: 'cours',
     lang: 'fr',
+    mode: 'words',
     level: { keys: 'home', words: 'easy' },
     duration: 60,
-    showKb: true,
-    sound: true
+    pendingLesson: null
   };
 
   var S = null; // session en cours
 
-  function newSession(mode, lang, level, duration) {
+  function newSession() {
     return {
-      mode: mode, lang: lang, level: level, duration: duration,
+      ctx: null, mode: 'words', lang: 'fr', level: 'easy', duration: 60, label: '',
       text: '', spans: [], caret: 0, prevCaret: -1,
       keystrokes: 0, correct: 0, errors: 0, errorMap: {},
       startTs: 0, elapsed: 0, timer: null, lastSampleSec: -1, wpmSamples: [],
@@ -221,21 +304,130 @@
   var heatMap = {};     // code -> élément touche (carte de chaleur)
 
   function cacheEls() {
-    ['view-home', 'view-train', 'view-stats', 'text-display', 'keyboard', 'keyboard-heat',
+    ['view-cours', 'view-libre', 'view-train', 'view-stats', 'lesson-map', 'cours-progress',
+     'cours-progress-label', 'map-hint', 'btn-continue', 'train-context', 'text-display', 'keyboard', 'keyboard-heat',
      'finger-legend', 'kb-zone', 'hud-wpm', 'hud-acc', 'hud-err', 'hud-time', 'progress-bar',
-     'btn-start', 'btn-stats', 'btn-stats-back', 'btn-sound', 'btn-quit', 'logo-home',
-     'results-modal', 'res-wpm', 'res-acc', 'res-err', 'res-chars', 'res-time', 'res-chart',
-     'res-sub', 'record-banner', 'btn-again', 'btn-home', 'best-strip', 'best-strip-content',
-     'stats-cards', 'stats-chart', 'btn-clear-history', 'opt-keyboard'].forEach(function (id) {
+     'btn-start-free', 'btn-sound', 'btn-quit', 'logo-home', 'results-modal', 'res-stars', 'res-xp',
+     'res-wpm', 'res-acc', 'res-err', 'res-chars', 'res-time', 'res-chart', 'res-sub', 'res-title',
+     'record-banner', 'levelup-banner', 'levelup-n', 'res-badges', 'btn-next', 'btn-again', 'btn-home',
+     'lesson-modal', 'lesson-newkeys', 'lesson-name', 'lesson-desc', 'lesson-best',
+     'btn-lesson-start', 'btn-lesson-back', 'stats-cards', 'stats-chart', 'stats-level', 'badges-grid',
+     'btn-clear-history', 'opt-keyboard', 'hdr-level', 'hdr-xpfill', 'hdr-stars', 'hdr-stars-max',
+     'hdr-streak', 'toast'].forEach(function (id) {
       els[id] = $(id);
     });
   }
 
   function showView(name) {
     ui.view = name;
-    ['view-home', 'view-train', 'view-stats'].forEach(function (v) { els[v].hidden = (v !== 'view-' + name); });
+    ['view-cours', 'view-libre', 'view-train', 'view-stats'].forEach(function (v) { els[v].hidden = (v !== 'view-' + name); });
+    document.querySelectorAll('.tab').forEach(function (t) { t.classList.toggle('active', t.dataset.view === name); });
+    if (name === 'cours') renderMap();
     if (name === 'stats') renderStats();
-    if (name === 'home') renderBestStrip();
+    renderHeader();
+  }
+
+  /* ---------- header joueur ---------- */
+  function renderHeader() {
+    var b = xpBounds(G.xp);
+    var fill = Math.min(100, Math.round(((G.xp - b[0]) / Math.max(1, b[1] - b[0])) * 100));
+    els['hdr-level'].textContent = b[2];
+    els['hdr-xpfill'].style.width = fill + '%';
+    var ts = totalStars(G.stars);
+    els['hdr-stars'].textContent = ts;
+    els['hdr-stars-max'].textContent = LESSONS.length * 3;
+    els['hdr-streak'].textContent = G.streak.count;
+  }
+
+  /* ---------- carte des leçons ---------- */
+  function starsHtml(n) {
+    var s = '';
+    for (var i = 1; i <= 3; i++) s += '<span class="' + (i <= n ? 'on' : '') + '">★</span>';
+    return s;
+  }
+
+  function firstIncompleteIdx() {
+    for (var i = 0; i < LESSONS.length; i++) if ((G.stars[LESSONS[i].id] || 0) === 0) return i;
+    return -1;
+  }
+
+  function renderMap() {
+    var map = els['lesson-map'];
+    map.innerHTML = '';
+    var done = 0, cur = firstIncompleteIdx();
+
+    // Bouton Continuer : reprend directement la prochaine leçon à faire
+    var cont = els['btn-continue'];
+    if (cur >= 0) {
+      var l0 = LESSONS[cur];
+      cont.hidden = false;
+      cont.textContent = '▶ Continuer — Leçon ' + (cur + 1) + ' : ' + l0.name;
+      cont.onclick = function () { startSession({ kind: 'lesson', lesson: l0 }); };
+    } else {
+      cont.hidden = false;
+      cont.textContent = '🏆 Cours terminé ! Revois tes leçons ou passe en mode Libre';
+      cont.onclick = function () { showView('libre'); };
+    }
+
+    var UNITS = globalThis.UNITS || [];
+    UNITS.forEach(function (u) {
+      var head = document.createElement('div');
+      head.className = 'unit-head';
+      head.innerHTML = '<span class="unit-icon">' + u.icon + '</span> ' + u.name;
+      map.appendChild(head);
+      var grid = document.createElement('div');
+      grid.className = 'unit-grid';
+      LESSONS.forEach(function (l, i) {
+        if (l.unit !== u.id) return;
+        var stars = G.stars[l.id] || 0;
+        var unlocked = isUnlocked(G.stars, i);
+        if (stars > 0) done++;
+        var card = document.createElement('div');
+        card.className = 'lesson-card'
+          + (unlocked ? '' : ' locked')
+          + (stars > 0 ? ' done' : '')
+          + (stars === 3 ? ' gold' : '')
+          + (unlocked && i === cur ? ' current' : '');
+        var keysHtml = l.newKeys.map(function (k) {
+          var f = fingerOfCode(charToCode(k)) || 'th';
+          return '<span class="mini-key f-' + f + '">' + k.toUpperCase() + '</span>';
+        }).join('');
+        card.innerHTML =
+          '<div class="lesson-top"><span class="lesson-num">' + (i + 1) + '</span>' +
+          '<span class="lesson-name">' + l.name + '</span></div>' +
+          (unlocked ? '' : '<span class="lesson-lock">🔒</span>') +
+          '<div class="lesson-newkeys">' + keysHtml + '</div>' +
+          '<div class="lesson-stars">' + starsHtml(stars) + '</div>';
+        if (unlocked) {
+          card.addEventListener('click', function () { openLessonModal(l); });
+        }
+        grid.appendChild(card);
+      });
+      map.appendChild(grid);
+    });
+
+    els['cours-progress'].style.width = (LESSONS.length ? (done / LESSONS.length) * 100 : 0) + '%';
+    els['cours-progress-label'].textContent = done + ' / ' + LESSONS.length + ' leçons terminées · ⭐ ' + totalStars(G.stars) + ' / ' + (LESSONS.length * 3) + ' · XP ' + G.xp;
+    els['map-hint'].hidden = done > 0 || cur === -1;
+  }
+
+  /* ---------- modale d'intro de leçon ---------- */
+  function openLessonModal(lesson) {
+    ui.pendingLesson = lesson;
+    var box = els['lesson-newkeys'];
+    box.innerHTML = '';
+    lesson.newKeys.forEach(function (k) {
+      var f = fingerOfCode(charToCode(k)) || 'th';
+      var mk = document.createElement('span');
+      mk.className = 'mini-key f-' + f;
+      mk.textContent = k.toUpperCase();
+      box.appendChild(mk);
+    });
+    if (!lesson.newKeys.length) box.innerHTML = '<span class="mini-key f-th">⌨️</span>';
+    els['lesson-name'].textContent = 'Leçon ' + (LESSONS.indexOf(lesson) + 1) + ' — ' + lesson.name;
+    els['lesson-desc'].textContent = lesson.desc;
+    els['lesson-best'].innerHTML = starsHtml(G.stars[lesson.id] || 0);
+    els['lesson-modal'].hidden = false;
   }
 
   /* ---------- rendu du clavier ---------- */
@@ -311,6 +503,10 @@
   function appendText(extra) {
     S.text += ' ' + extra;
     var box = els['text-display'];
+    var spSpace = document.createElement('span');
+    spSpace.className = 'ch'; spSpace.textContent = ' ';
+    box.appendChild(spSpace);
+    S.spans.push(spSpace);
     for (var i = 0; i < extra.length; i++) {
       var sp = document.createElement('span');
       sp.className = 'ch';
@@ -318,12 +514,6 @@
       box.appendChild(sp);
       S.spans.push(sp);
     }
-    // le premier caractère ajouté est un espace
-    var spSpace = document.createElement('span');
-    // (on insère l'espace avant les nouveaux spans)
-    S.spans.splice(S.spans.length - extra.length, 0, spSpace);
-    spSpace.className = 'ch'; spSpace.textContent = ' ';
-    box.insertBefore(spSpace, box.children[box.children.length - extra.length]);
     updateCursor();
     updateNextKey();
   }
@@ -341,8 +531,7 @@
 
   /* ---------- HUD ---------- */
   function updateHud() {
-    var wpm = computeWpm(S.correct, S.elapsed);
-    els['hud-wpm'].textContent = wpm;
+    els['hud-wpm'].textContent = computeWpm(S.correct, S.elapsed);
     els['hud-acc'].textContent = computeAcc(S.correct, S.keystrokes);
     els['hud-err'].textContent = S.errors;
     els['hud-time'].textContent = S.mode === 'time'
@@ -351,7 +540,48 @@
     els['progress-bar'].style.width = (S.text.length ? (S.caret / S.text.length) * 100 : 0) + '%';
   }
 
-  /* ---------- boucle de session ---------- */
+  /* ---------- démarrage d'une session ---------- */
+  function startSession(ctx) {
+    stopTimers();
+    S = newSession();
+    S.ctx = ctx;
+    S.lang = ui.lang;
+    if (ctx.kind === 'lesson') {
+      var l = ctx.lesson;
+      S.mode = l.type === 'time' ? 'time' : 'lesson';
+      S.duration = l.duration || 60;
+      S.text = genLessonText(l, ui.lang);
+      S.label = '🎓 Leçon ' + (LESSONS.indexOf(l) + 1) + ' — ' + l.name;
+    } else {
+      S.mode = ctx.mode;
+      S.duration = ctx.duration || 60;
+      S.level = ctx.level || 'easy';
+      S.text = generateText(ctx.mode, { lang: ui.lang, level: S.level });
+      S.label = '🏋️ Libre — ' + modeLabel(ctx.mode, ui.lang, ctx.duration);
+    }
+    renderText();
+    els['kb-zone'].style.display = G.settings.showKb ? '' : 'none';
+    els['train-context'].textContent = S.label;
+    setNextKey(charToCode(S.text[0]));
+    updateHud();
+    els['results-modal'].hidden = true;
+    els['lesson-modal'].hidden = true;
+    showView('train');
+    S.startTs = performance.now();
+    S.timer = setInterval(tick, 100);
+    window.focus();
+  }
+
+  function modeLabel(mode, lang, duration) {
+    var names = { keys: 'Touches', words: 'Mots', phrases: 'Phrases', time: 'Chrono ' + (duration || 60) + ' s' };
+    return (names[mode] || mode) + ' · ' + (lang === 'fr' ? 'FR' : 'EN');
+  }
+
+  function stopTimers() {
+    if (S && S.timer) clearInterval(S.timer);
+    if (S) S.timer = null;
+  }
+
   function tick() {
     if (!S || S.finished) return;
     S.elapsed = (performance.now() - S.startTs) / 1000;
@@ -364,32 +594,15 @@
     updateHud();
   }
 
-  function startSession() {
-    stopTimers();
-    S = newSession(ui.mode, ui.lang, ui.level[ui.mode] || ui.level.words, ui.duration);
-    S.text = generateText(ui.mode, { lang: ui.lang, level: ui.level[ui.mode] || 'easy' });
-    renderText();
-    els['kb-zone'].style.display = ui.showKb ? '' : 'none';
-    setNextKey(charToCode(S.text[0]));
-    updateHud();
-    showView('train');
-    els['results-modal'].hidden = true;
-    S.startTs = performance.now();
-    S.timer = setInterval(tick, 100);
-    window.focus();
-  }
-
-  function stopTimers() {
-    if (S && S.timer) clearInterval(S.timer);
-    if (S) S.timer = null;
-  }
-
+  /* ---------- saisie ---------- */
   function onKeyDown(e) {
     if (e.ctrlKey || e.metaKey || e.altKey) return;
 
     // Raccourcis globaux
-    if (ui.view === 'home' && e.key === 'Enter' && els['results-modal'].hidden) { e.preventDefault(); startSession(); return; }
-    if (!els['results-modal'].hidden && e.key === 'Enter') { e.preventDefault(); els['results-modal'].hidden = true; startSession(); return; }
+    if (!els['results-modal'].hidden && e.key === 'Enter') { e.preventDefault(); els['results-modal'].hidden = true; startSession(S.ctx); return; }
+    if (!els['lesson-modal'].hidden && e.key === 'Enter') { e.preventDefault(); els['lesson-modal'].hidden = true; startSession({ kind: 'lesson', lesson: ui.pendingLesson }); return; }
+    if (ui.view === 'cours' && e.key === 'Enter') { e.preventDefault(); var ci = firstIncompleteIdx(); if (ci >= 0) startSession({ kind: 'lesson', lesson: LESSONS[ci] }); return; }
+    if (ui.view === 'libre' && e.key === 'Enter') { e.preventDefault(); startSession({ kind: 'free', mode: ui.mode, level: ui.level[ui.mode] || 'easy', duration: ui.duration }); return; }
     if (ui.view !== 'train' || !S || S.finished) return;
 
     if (['Tab', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'PageUp', 'PageDown'].indexOf(e.key) !== -1) {
@@ -421,16 +634,28 @@
       S.correct++;
       flashKey(code, true);
       sfx('ok');
+      S.caret++;
+      updateCursor();
     } else {
-      S.spans[S.caret].className = 'ch bad';
       S.errors++;
       S.errorMap[code] = (S.errorMap[code] || 0) + 1;
       flashKey(code, false);
       sfx('bad');
+      // En leçon : faute bloquante façon TypingClub — on n'avance pas tant que la touche n'est pas juste
+      if (S.ctx.kind === 'lesson') {
+        var sp = S.spans[S.caret];
+        sp.classList.remove('ok');
+        sp.classList.add('bad'); // on garde la classe cursor intacte
+        var expCode = charToCode(expected);
+        if (expCode) flashKey(expCode, false);
+        updateNextKey();
+        updateHud();
+        return;
+      }
+      S.spans[S.caret].className = 'ch bad';
+      S.caret++;
+      updateCursor();
     }
-
-    S.caret++;
-    updateCursor();
 
     if (S.mode === 'time' && S.caret > S.text.length - 30) {
       appendText(genWords(ui.lang, 'normal', 40));
@@ -457,8 +682,11 @@
 
     var wpm = computeWpm(S.correct, S.elapsed);
     var acc = computeAcc(S.correct, S.keystrokes);
-    var record = { ts: Date.now(), mode: S.mode, lang: S.lang, level: S.level, duration: S.duration, wpm: wpm, acc: acc, errors: S.errors, chars: S.correct, secs: Math.round(S.elapsed) };
+    var isLesson = S.ctx.kind === 'lesson';
+    var lessonId = isLesson ? S.ctx.lesson.id : null;
+    var modeKey = isLesson ? 'lesson:' + lessonId : S.mode;
 
+    var record = { ts: Date.now(), mode: modeKey, lang: S.lang, wpm: wpm, acc: acc, errors: S.errors, chars: S.correct, secs: Math.round(S.elapsed) };
     var history = lsGet(LS_HISTORY, []);
     history.unshift(record);
     if (history.length > 300) history.length = 300;
@@ -468,26 +696,141 @@
     Object.keys(S.errorMap).forEach(function (c) { errs[c] = (errs[c] || 0) + S.errorMap[c]; });
     lsSet(LS_ERRORS, errs);
 
-    var isRecord = wpm > 0 && wpm > bestFor(S.mode, S.lang);
-    showResults(record, isRecord);
-    sfx('finish');
+    // ---- couche jeu ----
+    var prevLevel = playerLevel(G.xp);
+    var stars = 0, xpGain = 0;
+    if (isLesson) {
+      stars = starsFor(acc);
+      var prev = G.stars[lessonId] || 0;
+      if (stars > prev) G.stars[lessonId] = stars;
+      xpGain = S.correct + stars * 30 + (stars === 3 ? 50 : 0);
+    } else {
+      xpGain = S.correct;
+    }
+    G.xp += xpGain;
+    G.totalSessions++;
+    G.langs[S.lang] = true;
+    G.streak = nextStreak(G.streak);
+    var earned = checkBadges(G, { acc: acc, wpm: wpm, chars: S.correct, mode: modeKey, lang: S.lang });
+    saveGame();
+    var newLevel = playerLevel(G.xp);
+
+    showResults(record, {
+      stars: stars, xpGain: xpGain, earned: earned,
+      levelUp: newLevel > prevLevel, newLevel: newLevel,
+      isRecord: wpm > 0 && wpm > bestFor(modeKey, S.lang)
+    });
+    renderHeader();
+    if (newLevel > prevLevel) sfx('levelup'); else sfx('finish');
+    earned.forEach(function (b, i) { setTimeout(function () { toast('🏅 Badge débloqué : ' + b.icon + ' ' + b.name); }, 600 + i * 900); });
+    if (isLesson && stars > 0) { for (var s = 1; s <= stars; s++) setTimeout(function () { sfx('star'); }, 250 * s); }
   }
 
-  function showResults(r, isRecord) {
+  function showResults(r, g) {
+    els['res-title'].textContent = g.isLesson || (S && S.ctx.kind === 'lesson') ? 'Leçon terminée !' : 'Résultats';
     els['res-wpm'].textContent = r.wpm;
     els['res-acc'].textContent = r.acc + '%';
     els['res-err'].textContent = r.errors;
     els['res-chars'].textContent = r.chars;
     els['res-time'].textContent = fmtTime(r.secs);
-    els['res-sub'].textContent = modeLabel(r.mode, r.lang, r.duration) + ' · mots par minute (WPM)';
-    els['record-banner'].hidden = !isRecord;
+    els['res-sub'].textContent = (S && S.label ? S.label + ' · ' : '') + 'mots par minute (WPM)';
+    els['record-banner'].hidden = !g.isRecord;
+    els['levelup-banner'].hidden = !g.levelUp;
+    if (g.levelUp) els['levelup-n'].textContent = g.newLevel;
+
+    var isLesson = S && S.ctx.kind === 'lesson';
+    var starsRow = els['res-stars'];
+    starsRow.hidden = !isLesson;
+    if (isLesson) {
+      starsRow.querySelectorAll('.star').forEach(function (st) {
+        var on = parseInt(st.dataset.s, 10) <= g.stars;
+        st.classList.remove('filled');
+        if (on) setTimeout(function () { st.classList.add('filled'); }, 200 * parseInt(st.dataset.s, 10));
+      });
+    }
+    els['res-xp'].textContent = '+' + g.xpGain + ' XP';
+
+    var bb = els['res-badges'];
+    if (g.earned.length) {
+      bb.hidden = false;
+      bb.innerHTML = g.earned.map(function (b) { return '<span class="be">' + b.icon + ' ' + b.name + '</span>'; }).join('');
+    } else bb.hidden = true;
+
+    // bouton leçon suivante
+    var btnNext = els['btn-next'];
+    if (isLesson) {
+      var idx = LESSONS.indexOf(S.ctx.lesson);
+      var next = idx >= 0 && idx + 1 < LESSONS.length ? LESSONS[idx + 1] : null;
+      if (next && isUnlocked(G.stars, idx + 1)) {
+        btnNext.hidden = false;
+        btnNext.textContent = 'Leçon suivante : ' + next.name + ' ▶';
+        btnNext.onclick = function () { startSession({ kind: 'lesson', lesson: next }); };
+      } else if (next) {
+        btnNext.hidden = false;
+        btnNext.textContent = 'Termine cette leçon (⭐) pour débloquer la suivante ▶';
+        btnNext.onclick = function () { startSession(S.ctx); };
+      } else btnNext.hidden = true;
+    } else btnNext.hidden = true;
+
+    els['btn-again'].onclick = function () { startSession(S.ctx); };
+    els['btn-home'].onclick = function () {
+      els['results-modal'].hidden = true;
+      showView(S && S.ctx.kind === 'lesson' ? 'cours' : 'libre');
+    };
+
     els['results-modal'].hidden = false;
     drawLineChart(els['res-chart'], S.wpmSamples.map(function (p) { return p.wpm; }), '#22d3ee');
+    if (g.stars === 3 || g.levelUp) confettiBurst();
   }
 
-  function modeLabel(mode, lang, duration) {
-    var names = { keys: 'Exercice de touches', words: 'Mots', phrases: 'Phrases', time: 'Chrono ' + (duration || ui.duration) + ' s' };
-    return (names[mode] || mode) + ' · ' + (lang === 'fr' ? 'FR' : 'EN');
+  /* ---------- toast ---------- */
+  var toastTimer = null;
+  function toast(msg) {
+    var t = els['toast'];
+    t.textContent = msg;
+    t.hidden = false;
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { t.hidden = true; }, 3200);
+  }
+
+  /* ---------- confettis (canvas plein écran, ~2.5 s) ---------- */
+  function confettiBurst() {
+    if (typeof document === 'undefined' || !document.body || typeof requestAnimationFrame === 'undefined') return;
+    try {
+      var c = document.createElement('canvas');
+      c.className = 'confetti';
+      c.width = window.innerWidth; c.height = window.innerHeight;
+      document.body.appendChild(c);
+      var ctx = c.getContext('2d');
+      var colors = ['#22d3ee', '#a78bfa', '#f472b6', '#fbbf24', '#34d399'];
+      var parts = [];
+      for (var i = 0; i < 150; i++) {
+        parts.push({
+          x: window.innerWidth / 2 + (Math.random() - 0.5) * 260,
+          y: window.innerHeight * 0.32,
+          vx: (Math.random() - 0.5) * 15,
+          vy: -Math.random() * 14 - 4,
+          s: Math.random() * 7 + 4,
+          col: colors[rand(colors.length)],
+          r: Math.random() * Math.PI,
+          vr: (Math.random() - 0.5) * 0.3
+        });
+      }
+      var t0 = performance.now();
+      function frame(t) {
+        ctx.clearRect(0, 0, c.width, c.height);
+        parts.forEach(function (p) {
+          p.x += p.vx; p.y += p.vy; p.vy += 0.35; p.r += p.vr;
+          ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.r);
+          ctx.fillStyle = p.col;
+          ctx.fillRect(-p.s / 2, -p.s / 2, p.s, p.s * 0.6);
+          ctx.restore();
+        });
+        if (t - t0 < 2600) requestAnimationFrame(frame);
+        else if (c.parentNode) c.parentNode.removeChild(c);
+      }
+      requestAnimationFrame(frame);
+    } catch (e) { /* confettis indisponibles : on ignore */ }
   }
 
   /* ---------- graphiques (canvas, aucun lib) ---------- */
@@ -511,7 +854,6 @@
     function x(i) { return values.length === 1 ? padL + iw / 2 : padL + (i / (values.length - 1)) * iw; }
     function y(v) { return padT + ih - (v / max) * ih; }
 
-    // grille
     ctx.strokeStyle = 'rgba(255,255,255,0.07)';
     ctx.lineWidth = 1;
     for (var g = 0; g <= 3; g++) {
@@ -521,7 +863,6 @@
       ctx.fillText(Math.round((max * (3 - g)) / 3) + '', 2, gy + 3);
     }
 
-    // aire + ligne
     var grad = ctx.createLinearGradient(0, padT, 0, h - padB);
     grad.addColorStop(0, color + 'cc'); grad.addColorStop(1, color + '00');
     ctx.beginPath();
@@ -538,47 +879,51 @@
   }
 
   /* ---------- page progression ---------- */
-  function renderBestStrip() {
-    var h = lsGet(LS_HISTORY, []);
-    if (!h.length) { els['best-strip'].hidden = true; return; }
-    var parts = [];
-    [['keys', 'Touches'], ['words', 'Mots'], ['phrases', 'Phrases'], ['time', 'Chrono']].forEach(function (m) {
-      var best = 0, lang = '';
-      h.forEach(function (r) { if (r.mode === m[0] && r.wpm > best) { best = r.wpm; lang = r.lang; } });
-      if (best) parts.push(m[1] + ' ' + lang.toUpperCase() + ' : <b>' + best + ' MPM</b>');
-    });
-    els['best-strip-content'].innerHTML = parts.join(' &nbsp;·&nbsp; ');
-    els['best-strip'].hidden = false;
-  }
-
   function renderStats() {
     var h = lsGet(LS_HISTORY, []);
+    els['stats-level'].textContent = playerLevel(G.xp);
     var cards = els['stats-cards'];
     cards.innerHTML = '';
     if (!h.length) {
-      cards.innerHTML = '<div class="stat-card" style="grid-column:1/-1"><span class="stat-lab">Aucune session pour le moment — retourne t\'entraîner ! ⌨️</span></div>';
+      cards.innerHTML = '<div class="stat-card" style="grid-column:1/-1"><span class="stat-lab">Aucune session pour le moment — va sur l\'onglet 🎓 Cours !</span></div>';
       drawLineChart(els['stats-chart'], []);
-      renderHeatmap();
-      return;
+    } else {
+      var best = 0, totalSecs = 0, last10 = h.slice(0, 10), sum = 0;
+      h.forEach(function (r) { if (r.wpm > best) best = r.wpm; totalSecs += r.secs || 0; });
+      last10.forEach(function (r) { sum += r.wpm; });
+      var stats = [
+        [h.length, 'Sessions'],
+        [best + ' MPM', 'Record'],
+        [Math.round(sum / last10.length) + ' MPM', 'Moyenne (10 dernières)'],
+        [fmtTime(totalSecs), 'Temps total tapé'],
+        [totalStars(G.stars) + ' / ' + (LESSONS.length * 3), 'Étoiles ⭐'],
+        ['🔥 ' + G.streak.count, 'Série de jours'],
+        [G.xp + ' XP', 'Expérience'],
+        [Object.keys(G.badges).length + ' / ' + BADGES.length, 'Badges 🏅']
+      ];
+      stats.forEach(function (s) {
+        var d = document.createElement('div');
+        d.className = 'stat-card';
+        d.innerHTML = '<span class="stat-num">' + s[0] + '</span><span class="stat-lab">' + s[1] + '</span>';
+        cards.appendChild(d);
+      });
+      drawLineChart(els['stats-chart'], h.slice(0, 30).reverse().map(function (r) { return r.wpm; }), '#a78bfa');
     }
-    var best = 0, totalSecs = 0, last10 = h.slice(0, 10), sum = 0;
-    h.forEach(function (r) { if (r.wpm > best) best = r.wpm; totalSecs += r.secs || 0; });
-    last10.forEach(function (r) { sum += r.wpm; });
-    var avg = Math.round(sum / last10.length);
-    var stats = [
-      [h.length, 'Sessions'],
-      [best + ' MPM', 'Record'],
-      [avg + ' MPM', 'Moyenne (10 dernières)'],
-      [fmtTime(totalSecs), 'Temps total tapé']
-    ];
-    stats.forEach(function (s) {
-      var d = document.createElement('div');
-      d.className = 'stat-card';
-      d.innerHTML = '<span class="stat-num">' + s[0] + '</span><span class="stat-lab">' + s[1] + '</span>';
-      cards.appendChild(d);
-    });
-    drawLineChart(els['stats-chart'], h.slice(0, 30).reverse().map(function (r) { return r.wpm; }), '#a78bfa');
+    renderBadges();
     renderHeatmap();
+  }
+
+  function renderBadges() {
+    var grid = els['badges-grid'];
+    grid.innerHTML = '';
+    BADGES.forEach(function (b) {
+      var earned = !!G.badges[b.id];
+      var d = document.createElement('div');
+      d.className = 'badge-card ' + (earned ? 'earned' : 'locked');
+      d.innerHTML = '<span class="bicon">' + (earned ? b.icon : '🔒') + '</span>' +
+        '<div class="bname">' + b.name + '</div><div class="bdesc">' + b.desc + '</div>';
+      grid.appendChild(d);
+    });
   }
 
   function renderHeatmap() {
@@ -599,25 +944,56 @@
     });
   }
 
-  /* ---------- câblage de l'accueil ---------- */
-  function wireHome() {
+  /* ---------- câblage ---------- */
+  function wireNav() {
+    document.querySelectorAll('.tab').forEach(function (t) {
+      t.addEventListener('click', function () { stopTimers(); els['results-modal'].hidden = true; els['lesson-modal'].hidden = true; showView(t.dataset.view); });
+    });
+    els['logo-home'].addEventListener('click', function () { stopTimers(); els['results-modal'].hidden = true; showView('cours'); });
+    els['btn-quit'].addEventListener('click', function () {
+      stopTimers();
+      showView(S && S.ctx && S.ctx.kind === 'lesson' ? 'cours' : 'libre');
+    });
+    els['btn-lesson-back'].addEventListener('click', function () { els['lesson-modal'].hidden = true; });
+    els['btn-lesson-start'].addEventListener('click', function () {
+      els['lesson-modal'].hidden = true;
+      startSession({ kind: 'lesson', lesson: ui.pendingLesson });
+    });
+    els['btn-sound'].addEventListener('click', function () {
+      G.settings.sound = !G.settings.sound;
+      saveGame();
+      els['btn-sound'].textContent = G.settings.sound ? '🔊 Son' : '🔇 Son muet';
+      els['btn-sound'].classList.toggle('off', !G.settings.sound);
+      els['btn-sound'].setAttribute('aria-pressed', String(G.settings.sound));
+      if (G.settings.sound) sfx('ok');
+    });
+    els['btn-clear-history'].addEventListener('click', function () {
+      if (window.confirm('Effacer tout ton historique ET ta progression (XP, étoiles, badges, série) ?')) {
+        lsSet(LS_HISTORY, []); lsSet(LS_ERRORS, {});
+        G = defaultGame(); saveGame();
+        renderStats(); renderHeader(); renderMap();
+      }
+    });
+    document.addEventListener('keydown', onKeyDown);
+  }
+
+  function wireLibre() {
     document.querySelectorAll('.mode-card').forEach(function (card) {
       card.addEventListener('click', function (e) {
         if (e.target.closest('.chip')) return;
-        selectMode(card.dataset.mode);
+        ui.mode = card.dataset.mode;
+        document.querySelectorAll('.mode-card').forEach(function (c) { c.classList.toggle('active', c === card); });
       });
       card.addEventListener('keydown', function (e) {
-        if (e.key === 'Enter' && !e.target.closest('.chip')) { e.preventDefault(); selectMode(card.dataset.mode); }
+        if (e.key === 'Enter' && !e.target.closest('.chip')) { e.preventDefault(); ui.mode = card.dataset.mode; startSession({ kind: 'free', mode: ui.mode, level: ui.level[ui.mode] || 'easy', duration: ui.duration }); }
       });
     });
-
     document.querySelectorAll('.lang-chip').forEach(function (chip) {
       chip.addEventListener('click', function () {
         ui.lang = chip.dataset.lang;
         document.querySelectorAll('.lang-chip').forEach(function (c) { c.classList.toggle('active', c === chip); });
       });
     });
-
     document.querySelectorAll('.mode-levels').forEach(function (group) {
       var kind = group.dataset.levels;
       group.querySelectorAll('.chip').forEach(function (chip) {
@@ -629,70 +1005,37 @@
         });
       });
     });
-
-    els['btn-start'].addEventListener('click', startSession);
+    els['btn-start-free'].addEventListener('click', function () {
+      startSession({ kind: 'free', mode: ui.mode, level: ui.level[ui.mode] || 'easy', duration: ui.duration });
+    });
     els['opt-keyboard'].addEventListener('change', function (e) {
-      ui.showKb = e.target.checked;
-      saveSettings();
+      G.settings.showKb = e.target.checked;
+      saveGame();
     });
-  }
-
-  function selectMode(mode) {
-    ui.mode = mode;
-    document.querySelectorAll('.mode-card').forEach(function (c) { c.classList.toggle('active', c.dataset.mode === mode); });
-  }
-
-  function saveSettings() {
-    lsSet(LS_SETTINGS, { sound: ui.sound, showKb: ui.showKb });
-  }
-
-  function wireChrome() {
-    els['logo-home'].addEventListener('click', function () { stopTimers(); els['results-modal'].hidden = true; showView('home'); });
-    els['btn-stats'].addEventListener('click', function () { showView('stats'); });
-    els['btn-stats-back'].addEventListener('click', function () { showView('home'); });
-    els['btn-quit'].addEventListener('click', function () { stopTimers(); showView('home'); });
-    els['btn-again'].addEventListener('click', function () { startSession(); });
-    els['btn-home'].addEventListener('click', function () { els['results-modal'].hidden = true; showView('home'); });
-    els['btn-sound'].addEventListener('click', function () {
-      ui.sound = !ui.sound;
-      els['btn-sound'].textContent = ui.sound ? '🔊 Son' : '🔇 Son muet';
-      els['btn-sound'].classList.toggle('off', !ui.sound);
-      els['btn-sound'].setAttribute('aria-pressed', String(ui.sound));
-      saveSettings();
-      if (ui.sound) sfx('ok');
-    });
-    els['btn-clear-history'].addEventListener('click', function () {
-      if (window.confirm('Effacer tout ton historique et tes statistiques d\'erreurs ?')) {
-        lsSet(LS_HISTORY, []); lsSet(LS_ERRORS, {});
-        renderStats(); renderBestStrip();
-      }
-    });
-    document.addEventListener('keydown', onKeyDown);
   }
 
   function init() {
     cacheEls();
-    var settings = lsGet(LS_SETTINGS, {});
-    ui.sound = settings.sound !== false;
-    ui.showKb = settings.showKb !== false;
-    els['opt-keyboard'].checked = ui.showKb;
-    els['btn-sound'].textContent = ui.sound ? '🔊 Son' : '🔇 Son muet';
-    els['btn-sound'].classList.toggle('off', !ui.sound);
-
+    els['opt-keyboard'].checked = G.settings.showKb;
+    els['btn-sound'].textContent = G.settings.sound ? '🔊 Son' : '🔇 Son muet';
+    els['btn-sound'].classList.toggle('off', !G.settings.sound);
     buildFingerLegend();
     buildKeyboard(els['keyboard'], kbMap);
-    wireHome();
-    wireChrome();
-    renderBestStrip();
-    showView('home');
+    wireNav();
+    wireLibre();
+    showView('cours');
   }
 
   /* ---------------- exports pour tests Node ---------------- */
   globalThis.KTQ = {
-    normalize: normalize, genKeys: genKeys, genWords: genWords, genPhrases: genPhrases,
-    generateText: generateText, computeWpm: computeWpm, computeAcc: computeAcc,
-    fmtTime: fmtTime, charToCode: charToCode, fingerOfCode: fingerOfCode,
-    KB_ROWS: KB_ROWS, FINGERS: FINGERS, wordPool: wordPool
+    normalize: normalize, rand: rand, genFromSet: genFromSet, genKeys: genKeys,
+    genWords: genWords, genPhrases: genPhrases, generateText: generateText, genLessonText: genLessonText,
+    computeWpm: computeWpm, computeAcc: computeAcc, fmtTime: fmtTime,
+    starsFor: starsFor, playerLevel: playerLevel, xpBounds: xpBounds,
+    isUnlocked: isUnlocked, totalStars: totalStars, dayStr: dayStr, nextStreak: nextStreak,
+    charToCode: charToCode, fingerOfCode: fingerOfCode,
+    KB_ROWS: KB_ROWS, FINGERS: FINGERS, LESSONS: LESSONS, BADGES: BADGES, wordPool: wordPool,
+    defaultGame: defaultGame, checkBadges: checkBadges
   };
 
   if (typeof document !== 'undefined' && typeof window !== 'undefined') {

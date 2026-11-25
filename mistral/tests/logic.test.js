@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const ROOT = path.join(__dirname, '..');
 
-for (const f of ['js/words-fr.js', 'js/words-en.js', 'js/app.js']) {
+for (const f of ['js/words-fr.js', 'js/words-en.js', 'js/lessons.js', 'js/app.js']) {
   eval(fs.readFileSync(path.join(ROOT, f), 'utf8'));
 }
 const KTQ = globalThis.KTQ;
@@ -86,6 +86,85 @@ ok(globalThis.WORDS_FR.length > 150, `WORDS_FR conséquent (${globalThis.WORDS_F
 ok(globalThis.WORDS_EN.length > 150, `WORDS_EN conséquent (${globalThis.WORDS_EN.length} mots)`);
 ok(globalThis.PHRASES_FR.length >= 20, `PHRASES_FR (${globalThis.PHRASES_FR.length})`);
 ok(globalThis.PHRASES_EN.length >= 20, `PHRASES_EN (${globalThis.PHRASES_EN.length})`);
+
+console.log('== cours gamifié ==');
+eq(KTQ.LESSONS.length, 21, '21 leçons dans le cours');
+eq(new Set(KTQ.LESSONS.map(l => l.id)).size, KTQ.LESSONS.length, 'ids de leçons uniques');
+const unitIds = new Set((globalThis.UNITS || []).map(u => u.id));
+ok(KTQ.LESSONS.every(l => unitIds.has(l.unit)), 'chaque leçon appartient à une unité connue');
+eq(new Set(KTQ.LESSONS.map(l => l.unit)).size, unitIds.size, 'toutes les unités contiennent au moins une leçon');
+// les unités forment des blocs contigus dans l'ordre du cours (carte lisible)
+let blocks = 1;
+for (let i = 1; i < KTQ.LESSONS.length; i++) if (KTQ.LESSONS[i].unit !== KTQ.LESSONS[i - 1].unit) blocks++;
+eq(blocks, unitIds.size, `unités contiguës (${blocks} blocs = ${unitIds.size} unités)`);
+KTQ.LESSONS.forEach((l, i) => {
+  ok(!!l.name && !!l.desc && !!l.type, `leçon ${l.id}: nom/desc/type présents`);
+  const badChars = [...new Set(l.set.split('').filter(c => c !== ' ' && !KTQ.charToCode(c)))];
+  eq(badChars, [], `leçon ${l.id}: tous les caractères du set sont tapables sur QWERTY`);
+  for (const lang of ['fr', 'en']) {
+    const t = KTQ.genLessonText(l, lang);
+    ok(t.length > 20, `leçon ${l.id} (${lang}): texte généré (${t.length} car.)`);
+    const missing = [...new Set(t.split('').filter(c => !KTQ.charToCode(c)))];
+    eq(missing, [], `leçon ${l.id} (${lang}): tous les caractères générés mappés (manquants: ${missing.join('')})`);
+  }
+});
+// progression pédagogique : chaque leçon n'utilise que des touches déjà vues (set croissant)
+for (let i = 1; i < KTQ.LESSONS.length; i++) {
+  const prev = KTQ.LESSONS[i - 1].set, cur = KTQ.LESSONS[i].set;
+  if (cur !== 'all' && prev !== 'all') {
+    const newChars = [...cur].filter(c => !prev.includes(c));
+    ok(newChars.length <= 6, `leçon ${KTQ.LESSONS[i].id}: introduit au plus 6 nouveaux caractères (${newChars.join('')})`);
+  }
+}
+// étoiles
+eq(KTQ.starsFor(100), 3, '100% -> 3 étoiles');
+eq(KTQ.starsFor(95), 3, '95% -> 3 étoiles');
+eq(KTQ.starsFor(94), 2, '94% -> 2 étoiles');
+eq(KTQ.starsFor(85), 2, '85% -> 2 étoiles');
+eq(KTQ.starsFor(84), 1, '84% -> 1 étoile');
+eq(KTQ.starsFor(70), 1, '70% -> 1 étoile');
+eq(KTQ.starsFor(69), 0, '69% -> 0 étoile (rejouer)');
+// niveaux / XP
+eq(KTQ.playerLevel(0), 1, '0 XP -> niveau 1');
+eq(KTQ.playerLevel(99), 1, '99 XP -> niveau 1');
+eq(KTQ.playerLevel(100), 2, '100 XP -> niveau 2');
+eq(KTQ.playerLevel(400), 3, '400 XP -> niveau 3');
+eq(KTQ.xpBounds(0), [0, 100, 1], 'xpBounds(0)');
+eq(KTQ.xpBounds(250), [100, 400, 2], 'xpBounds(250)');
+// déblocage des leçons
+eq(KTQ.isUnlocked({}, 0), true, 'leçon 1 toujours débloquée');
+eq(KTQ.isUnlocked({}, 1), false, 'leçon 2 verrouillée sans étoile');
+eq(KTQ.isUnlocked({ l01: 1 }, 1), true, 'leçon 2 débloquée avec 1 étoile sur l01');
+eq(KTQ.isUnlocked({ l01: 3 }, 1), true, 'leçon 2 débloquée avec 3 étoiles');
+eq(KTQ.isUnlocked({ l01: 1 }, 2), false, 'leçon 3 encore verrouillée');
+eq(KTQ.totalStars({ l01: 3, l02: 2 }), 5, 'totalStars');
+// série de jours
+eq(KTQ.nextStreak({ last: KTQ.dayStr(), count: 4 }), { last: KTQ.dayStr(), count: 4 }, 'même jour: série inchangée');
+const y = new Date(); y.setDate(y.getDate() - 1);
+const yStr = KTQ.dayStr(y);
+eq(KTQ.nextStreak({ last: yStr, count: 4 }).count, 5, 'veille: série +1');
+eq(KTQ.nextStreak({ last: '2000-01-01', count: 9 }).count, 1, 'trou: série remise à 1');
+eq(KTQ.nextStreak({ last: null, count: 0 }).count, 1, 'première session: série = 1');
+// badges
+eq(KTQ.BADGES.length, 13, '13 badges définis');
+ok(KTQ.BADGES.every(b => b.id && b.icon && b.name && b.desc && typeof b.test === 'function'), 'chaque badge a id/icone/nom/desc/test');
+const G1 = KTQ.defaultGame();
+let earned = KTQ.checkBadges(G1, null);
+eq(earned.length, 0, 'aucun badge sans session');
+G1.totalSessions = 1;
+earned = KTQ.checkBadges(G1, null);
+ok(earned.some(b => b.id === 'first'), 'badge "Première frappe" après 1 session');
+earned = KTQ.checkBadges(G1, { acc: 100, wpm: 85, chars: 120, mode: 'words', lang: 'fr' });
+ok(earned.some(b => b.id === 'flawless') && earned.some(b => b.id === 'fast80'), 'badges Sans faute + Éclair avec ctx 100%/85MPM');
+earned = KTQ.checkBadges(G1, { acc: 90, wpm: 10, chars: 5, mode: 'words', lang: 'fr' });
+eq(earned.length, 0, 'badges déjà gagnés non rejoués');
+// diplôme : toutes les leçons à 1 étoile min
+const G2 = KTQ.defaultGame();
+KTQ.LESSONS.forEach(l => { G2.stars[l.id] = 1; });
+ok(KTQ.checkBadges(G2, null).some(b => b.id === 'graduate'), 'badge Diplômé quand tout le cours est à 1★');
+const G3 = KTQ.defaultGame();
+KTQ.LESSONS.forEach(l => { G3.stars[l.id] = 3; });
+ok(KTQ.checkBadges(G3, null).some(b => b.id === 'all3'), 'badge Collectionneur quand tout est à 3★');
 
 console.log(failures === 0 ? '\n✅ TOUS LES TESTS PASSENT' : `\n❌ ${failures} ÉCHEC(S)`);
 process.exit(failures === 0 ? 0 : 1);

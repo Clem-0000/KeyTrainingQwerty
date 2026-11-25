@@ -30,27 +30,38 @@ L'application est alors disponible à l'adresse :
 
 ## 🎯 Fonctionnalités
 
-- **Clavier QWERTY virtuel codé par doigt** : chaque touche a la couleur du doigt qui doit la frapper ; la prochaine touche pulse et le doigt concerné est mis en évidence dans la légende. Les petits traits sur `F` et `J` rappellent la ligne de base.
-- **4 modes d'exercice** :
-  - 🎯 **Touches** : ligne de base `ASDF JKL;` puis rangée haute, puis tout le clavier.
-  - 📝 **Mots** : mots aléatoires, niveaux facile / normal / difficile.
-  - 💬 **Phrases** : phrases complètes (majuscules, ponctuation).
-  - ⏱️ **Chrono** : sprint de 30 / 60 / 120 s avec génération de mots infinie.
-- **Langue FR ou EN** (les accents français sont retirés à la génération pour rester tapables sur n'importe quelle disposition).
-- **Métriques en direct** : vitesse en MPM (mots/min, = WPM), précision %, erreurs, temps, barre de progression.
-- **Écran de résultats** : record personnel, courbe de vitesse pendant la session.
-- **Progression sauvegardée localement** (`localStorage`) : historique des sessions, graphique d'évolution, et **carte de chaleur des erreurs** sur le clavier pour visualiser tes touches faibles.
-- **Sons** générés en WebAudio (aucun fichier audio), désactivables.
-- Raccourcis : `Entrée` pour lancer/rejouer, `Retour arrière` pour corriger.
+### 🎮 Cours gamifié (façon TypingClub)
+- **6 unités / 21 leçons progressives** sur la carte des niveaux : 🏠 ligne de base → ☝️ index → 🖐️ tous les doigts → 🔢 chiffres → ✍️ écriture réelle → ⚡ vitesse. Chaque leçon n'introduit que quelques nouvelles touches et **débloque la suivante** (1 ⭐ minimum).
+- **Bouton « ▶ Continuer »** en haut du cours pour reprendre directement là où tu t'étais arrêté (raccourci `Entrée` aussi).
+- **Faute bloquante en leçon** (comme TypingClub) : tant que la touche n'est pas la bonne, le curseur n'avance pas — on apprend par la correction. En mode Libre, la faute est simplement marquée.
+- **Étoiles par leçon** : 3 ⭐ à ≥ 95 % de précision, 2 ⭐ à ≥ 85 %, 1 ⭐ à ≥ 70 %.
+- **XP et niveaux de joueur** : chaque session rapporte de l'XP (caractères justes + bonus étoiles), barre de progression vers le niveau suivant dans le header, fanfare 🎉 au passage de niveau.
+- **13 badges** à débloquer (Sans faute, Éclair 80 MPM, Diplômé, série de 7 jours…), avec toast de félicitation.
+- **Série de jours 🔥** : nombre de jours d'entraînement consécutifs.
+- Modale d'intro de leçon (nouvelles touches en couleur de doigt) + écran de résultats animé (étoiles qui pop, XP, badges, **confettis** sur 3 ⭐ ou niveau supérieur, bouton « Leçon suivante ▶ »).
+
+### 🏋️ Entraînement libre
+- **4 modes** : 🎯 touches (ligne de base → tout le clavier), 📝 mots (facile/normal/difficile), 💬 phrases, ⏱️ chrono 30/60/120 s (texte infini).
+- **Langue FR ou EN** (accents retirés à la génération pour rester tapables sur toute disposition).
+
+### ⌨️ Clavier QWERTY virtuel codé par doigt
+Chaque touche a la couleur du doigt qui doit la frapper ; la prochaine touche pulse et le doigt concerné s'illumine dans la légende. Repères sur `F` et `J`.
+
+### 📊 Progression
+- Métriques en direct : **MPM (WPM)**, précision %, erreurs, temps, barre de progression.
+- Historique `localStorage` : graphique d'évolution, records, **carte de chaleur des erreurs** sur le clavier (tes touches faibles en rouge).
+- Sons générés en WebAudio (aucun fichier), désactivables. Raccourcis : `Entrée` pour lancer, `Retour arrière` pour corriger.
 
 ## 🗂️ Structure
 
 ```
-index.html          page unique (3 vues : accueil, entraînement, progression)
-css/style.css       thème sombre néon, 100 % local
+index.html          page unique (vues : Cours, Libre, Entraînement, Progression + modales)
+css/style.css       thème sombre néon + couche gamification, 100 % local
 js/words-fr.js      listes de mots/phrases FR
 js/words-en.js      listes de mots/phrases EN
-js/app.js           logique : génération de texte, saisie, clavier, stats, sons
+js/lessons.js       curriculum (21 leçons QWERTY) + 13 badges
+js/app.js           logique : jeu (XP/étoiles/badges/série), génération, saisie, clavier, stats, sons
+tests/              tests Node sans dépendance (logique + intégration DOM via shim)
 ```
 
 ## 🔒 Confidentialité
