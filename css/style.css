@@ -308,3 +308,126 @@ main { max-width: 1100px; margin: 0 auto; padding: 10px 22px 60px; }
   .res-grid { grid-template-columns: repeat(2, 1fr); }
   .hud-value { font-size: 1.35rem; }
 }
+
+/* ============================================================
+   KeyTrain — couche gamification (cours, XP, étoiles, badges)
+   ============================================================ */
+.topbar { flex-wrap: wrap; gap: 10px; }
+.player-strip { display: flex; gap: 8px; flex-wrap: wrap; }
+.pchip {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 0.85rem; font-weight: 700; color: var(--text);
+  background: var(--card); border: 1px solid var(--card-border); border-radius: 999px;
+  padding: 7px 13px; backdrop-filter: blur(10px);
+}
+.pchip b { color: var(--cyan); font-family: var(--mono); }
+.pchip.big { font-size: 1rem; padding: 9px 16px; border-radius: 12px; }
+.xpbar {
+  width: 90px; height: 8px; border-radius: 999px; overflow: hidden;
+  background: rgba(255, 255, 255, 0.09); display: inline-block;
+}
+.xpbar i {
+  display: block; height: 100%; width: 0%; border-radius: 999px;
+  background: linear-gradient(90deg, var(--amber), var(--pink));
+  box-shadow: 0 0 10px rgba(251, 191, 36, 0.7); transition: width 0.5s ease;
+}
+.tab.active {
+  color: #06121c; background: linear-gradient(90deg, var(--cyan), #67e8f9);
+  border-color: transparent; box-shadow: 0 0 16px rgba(34, 211, 238, 0.45);
+}
+
+/* ---------- carte des leçons ---------- */
+.cours-head { text-align: center; padding: 26px 10px 22px; max-width: 760px; margin: 0 auto; }
+.cours-head h1 { font-size: clamp(1.6rem, 4vw, 2.4rem); font-weight: 800; letter-spacing: -0.02em; }
+.cours-head .hero-sub { margin: 12px auto 18px; }
+.progress.big { height: 10px; max-width: 520px; margin: 0 auto; }
+.cours-progress-label { margin-top: 8px; color: var(--muted); font-size: 0.88rem; font-weight: 600; }
+
+.lesson-map {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 14px; max-width: 1000px; margin: 0 auto;
+}
+.lesson-card {
+  position: relative; display: flex; flex-direction: column; gap: 8px; text-align: left;
+  background: var(--card); border: 1px solid var(--card-border); border-radius: 16px;
+  padding: 16px; cursor: pointer; transition: all 0.18s ease; font-family: var(--sans); color: var(--text);
+}
+.lesson-card:hover:not(.locked) { transform: translateY(-3px); border-color: rgba(34, 211, 238, 0.6); box-shadow: 0 12px 30px rgba(0,0,0,0.4), 0 0 18px rgba(34, 211, 238, 0.2); }
+.lesson-card.locked { opacity: 0.45; cursor: not-allowed; filter: grayscale(0.7); }
+.lesson-card.done { border-color: rgba(52, 211, 153, 0.45); }
+.lesson-card.gold { border-color: rgba(251, 191, 36, 0.65); box-shadow: 0 0 18px rgba(251, 191, 36, 0.18); }
+.lesson-card.current { animation: current-pulse 1.4s ease-in-out infinite; border-color: var(--cyan); }
+@keyframes current-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(34, 211, 238, 0.55); }
+  50% { box-shadow: 0 0 0 9px rgba(34, 211, 238, 0); }
+}
+.lesson-top { display: flex; align-items: center; gap: 10px; }
+.lesson-num {
+  font-family: var(--mono); font-weight: 800; font-size: 0.8rem; color: #06121c;
+  background: var(--grad); border-radius: 8px; padding: 3px 8px; flex: 0 0 auto;
+}
+.lesson-card.locked .lesson-num { background: #475569; color: #cbd5e1; }
+.lesson-name { font-weight: 700; font-size: 0.98rem; line-height: 1.25; }
+.lesson-lock { position: absolute; top: 12px; right: 13px; font-size: 1.05rem; }
+.lesson-newkeys { display: flex; gap: 5px; flex-wrap: wrap; min-height: 26px; }
+.mini-key {
+  --fc: #94a3b8;
+  min-width: 26px; height: 26px; padding: 0 6px; border-radius: 6px;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-family: var(--mono); font-weight: 800; font-size: 0.8rem; color: var(--fc);
+  background: color-mix(in srgb, var(--fc) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--fc) 55%, transparent);
+}
+.lesson-stars { font-size: 1.05rem; letter-spacing: 2px; color: rgba(255, 255, 255, 0.18); }
+.lesson-stars .on { color: var(--amber); text-shadow: 0 0 10px rgba(251, 191, 36, 0.8); }
+.map-hint { text-align: center; color: var(--muted); font-size: 0.88rem; margin-top: 16px; animation: caret-blink 1.6s steps(1) infinite; }
+
+/* ---------- bannière de contexte en jeu ---------- */
+.lesson-banner {
+  text-align: center; font-weight: 700; font-size: 0.95rem; color: var(--cyan);
+  background: rgba(34, 211, 238, 0.08); border: 1px solid rgba(34, 211, 238, 0.3);
+  border-radius: 12px; padding: 9px 14px; margin-bottom: 12px;
+}
+
+/* ---------- modale leçon ---------- */
+.lesson-newkeys { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-bottom: 14px; }
+.lesson-newkeys .mini-key { min-width: 52px; height: 52px; font-size: 1.5rem; border-radius: 12px; border-bottom-width: 4px; background: linear-gradient(180deg, rgba(255,255,255,0.1), rgba(255,255,255,0.03)); box-shadow: 0 4px 0 rgba(0,0,0,0.4); }
+.lesson-desc { color: var(--muted); line-height: 1.6; margin: 10px 0 6px; }
+.lesson-best { margin: 8px 0 4px; font-size: 1.15rem; letter-spacing: 3px; color: rgba(255,255,255,0.18); min-height: 22px; }
+.lesson-best .on { color: var(--amber); text-shadow: 0 0 10px rgba(251, 191, 36, 0.8); }
+
+/* ---------- étoiles des résultats ---------- */
+.stars-row { display: flex; justify-content: center; gap: 8px; margin-bottom: 6px; }
+.stars-row .star { font-size: 2.6rem; color: rgba(255, 255, 255, 0.15); transition: all 0.2s; }
+.stars-row .star.filled { color: var(--amber); text-shadow: 0 0 22px rgba(251, 191, 36, 0.9); animation: star-pop 0.45s cubic-bezier(0.2, 1.8, 0.4, 1); }
+@keyframes star-pop { from { transform: scale(0) rotate(-40deg); } to { transform: scale(1) rotate(0); } }
+.res-xp { font-weight: 800; color: var(--green); font-size: 1.05rem; margin-bottom: 4px; text-shadow: 0 0 12px rgba(52, 211, 153, 0.5); }
+
+/* ---------- badges ---------- */
+.badge-earned { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin: 4px 0 12px; }
+.badge-earned .be { background: rgba(251, 191, 36, 0.12); border: 1px solid rgba(251, 191, 36, 0.5); border-radius: 999px; padding: 6px 12px; font-size: 0.82rem; font-weight: 700; animation: star-pop 0.4s ease; }
+.badges-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 12px; }
+.badge-card {
+  background: rgba(255, 255, 255, 0.04); border: 1px solid var(--card-border);
+  border-radius: 14px; padding: 14px; text-align: center; transition: all 0.15s ease;
+}
+.badge-card .bicon { font-size: 1.9rem; display: block; margin-bottom: 6px; }
+.badge-card .bname { font-weight: 700; font-size: 0.9rem; }
+.badge-card .bdesc { color: var(--muted); font-size: 0.76rem; margin-top: 3px; line-height: 1.4; }
+.badge-card.earned { border-color: rgba(251, 191, 36, 0.55); box-shadow: 0 0 16px rgba(251, 191, 36, 0.15); }
+.badge-card.locked { opacity: 0.4; filter: grayscale(1); }
+
+/* ---------- toast ---------- */
+.toast {
+  position: fixed; bottom: 26px; left: 50%; transform: translateX(-50%);
+  z-index: 80; background: linear-gradient(90deg, #422006, #713f12); color: #fde68a;
+  border: 1px solid rgba(251, 191, 36, 0.6); border-radius: 14px; padding: 13px 22px;
+  font-weight: 700; box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6), 0 0 24px rgba(251, 191, 36, 0.35);
+  animation: toast-in 0.35s cubic-bezier(0.2, 1.4, 0.4, 1);
+}
+@keyframes toast-in { from { transform: translate(-50%, 30px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
+
+@media (max-width: 860px) {
+  .topbar { justify-content: center; }
+  .topnav { flex-wrap: wrap; justify-content: center; }
+}
