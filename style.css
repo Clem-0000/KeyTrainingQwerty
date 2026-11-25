@@ -1,0 +1,182 @@
+/* ============ QwertyLab — dark néon, 0 dépendance ============ */
+:root{
+  --bg:#0b0e16;
+  --bg2:#111527;
+  --panel:#151a2e;
+  --panel2:#1a2138;
+  --line:rgba(120,140,255,.14);
+  --txt:#e8ecff;
+  --muted:#8a92b8;
+  --neon:#6c5ce7;
+  --neon2:#00e5ff;
+  --ok:#2ce6a0;
+  --bad:#ff5470;
+  --warn:#ffd166;
+  --radius:14px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{
+  font-family:"Segoe UI",system-ui,-apple-system,Roboto,sans-serif;
+  background:radial-gradient(1200px 700px at 80% -10%,#1b2350 0%,var(--bg) 55%);
+  color:var(--txt);overflow-x:hidden;
+}
+.scanlines{position:fixed;inset:0;pointer-events:none;z-index:50;opacity:.05;
+  background:repeating-linear-gradient(0deg,#fff 0 1px,transparent 1px 3px)}
+
+/* ---------- top bar ---------- */
+.topbar{display:flex;align-items:center;gap:24px;padding:14px 28px;
+  background:rgba(17,21,39,.85);backdrop-filter:blur(8px);
+  border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20}
+.logo{font-size:1.35rem;font-weight:800;letter-spacing:.5px}
+.logo span{color:var(--neon2);text-shadow:0 0 12px var(--neon2)}
+.tabs{display:flex;gap:6px;margin-left:12px}
+.tab{background:transparent;border:1px solid transparent;color:var(--muted);
+  padding:8px 16px;border-radius:10px;cursor:pointer;font-size:.95rem;transition:.2s}
+.tab:hover{color:var(--txt);background:rgba(108,92,231,.12)}
+.tab.active{color:#fff;background:linear-gradient(135deg,var(--neon),#4834b8);
+  border-color:rgba(108,92,231,.6);box-shadow:0 0 18px rgba(108,92,231,.45)}
+.topbar-right{margin-left:auto}
+.live-wpm{display:flex;align-items:baseline;gap:6px;padding:6px 14px;border-radius:10px;
+  background:var(--panel2);border:1px solid var(--line)}
+.live-wpm span{font-size:1.3rem;font-weight:800;color:var(--neon2);min-width:2ch;text-align:right}
+.live-wpm small{color:var(--muted)}
+
+/* ---------- layout ---------- */
+.layout{display:grid;grid-template-columns:320px 1fr;gap:20px;padding:24px 28px;max-width:1400px;margin:0 auto}
+@media(max-width:980px){.layout{grid-template-columns:1fr}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin-bottom:16px}
+.panel h2{font-size:.85rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:10px}
+.hidden{display:none!important}
+h2,h3{font-weight:700}
+
+/* ---------- mains ---------- */
+.hands{width:100%;height:auto}
+.finger{fill:#232b4d;stroke:#39426e;stroke-width:1.5;transition:all .15s}
+.finger.active{fill:var(--neon);stroke:var(--neon2);filter:drop-shadow(0 0 6px var(--neon2))}
+.hands-hint{fill:var(--muted);font-size:9px;text-anchor:middle}
+
+/* ---------- clavier virtuel ---------- */
+.keyboard{display:flex;flex-direction:column;gap:5px;user-select:none}
+.krow{display:flex;gap:5px;justify-content:center}
+.key{
+  min-width:clamp(20px,5.5%,30px);height:34px;border-radius:6px;
+  background:#202743;border:1px solid #2d3559;color:var(--muted);
+  display:flex;align-items:center;justify-content:center;
+  font-size:.78rem;font-weight:600;position:relative;transition:all .12s;
+  text-transform:uppercase;
+}
+.key.wide{min-width:56px}.key.space{min-width:150px}
+.key.lpinky{border-bottom:2px solid #ff5470}
+.key.lring{border-bottom:2px solid #ffa142}
+.key.lmid{border-bottom:2px solid #ffd166}
+.key.lindex{border-bottom:2px solid #2ce6a0}
+.key.rindex{border-bottom:2px solid #2ce6a0}
+.key.rmid{border-bottom:2px solid #ffd166}
+.key.rring{border-bottom:2px solid #ffa142}
+.key.rpinky{border-bottom:2px solid #ff5470}
+.key.homing::after{content:"";position:absolute;bottom:3px;width:14px;height:2px;border-radius:2px;background:currentColor}
+.key.next{background:var(--neon);color:#fff;border-color:var(--neon2);
+  box-shadow:0 0 16px rgba(0,229,255,.55);transform:translateY(-2px)}
+.key.pressed{transform:scale(.92);background:#33407a}
+.key.error{background:var(--bad);border-color:var(--bad);color:#fff}
+
+/* ---------- texte à taper ---------- */
+.main-area{min-width:0}
+.view{animation:fadein .25s ease}
+@keyframes fadein{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+.text-display{
+  font-family:"Cascadia Mono","Consolas",monospace;
+  font-size:1.6rem;line-height:1.9;letter-spacing:1px;
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+  padding:28px 26px;min-height:180px;cursor:text;flex-wrap:wrap;
+  display:flex;
+}
+.text-display.blurred{filter:blur(4px)}
+.char{white-space:pre;color:var(--muted);border-radius:3px;padding:0 1px;position:relative}
+.char.current{background:rgba(108,92,231,.25);outline:1px solid var(--neon)}
+.char.correct{color:var(--txt)}
+.char.wrong{color:var(--bad);background:rgba(255,84,112,.18)}
+.char.caret::before{content:"";position:absolute;left:-1px;top:8%;bottom:8%;width:2px;
+  background:var(--neon2);box-shadow:0 0 8px var(--neon2);animation:blink 1s infinite}
+@keyframes blink{50%{opacity:0}}
+
+/* ---------- curseur voiture ---------- */
+.race-track{position:relative;height:34px;margin:16px 0;border-radius:8px;overflow:hidden;
+  background:linear-gradient(180deg,#181f3a,#141a30);border:1px solid var(--line)}
+.race-track::before{content:"";position:absolute;inset:10px 0;background:
+  repeating-linear-gradient(90deg,rgba(255,255,255,.05) 0 30px,transparent 30px 60px)}
+.race-car{position:absolute;top:2px;left:0;font-size:24px;transition:left .15s linear;z-index:2}
+.race-finish{position:absolute;right:8px;top:5px;font-size:18px;z-index:2}
+
+/* ---------- session ---------- */
+.session-head{display:flex;align-items:center;gap:18px;flex-wrap:wrap;margin-bottom:14px}
+.lesson-title{font-size:1.15rem}
+.session-metrics{margin-left:auto;display:flex;gap:10px}
+.metric{background:var(--panel2);border:1px solid var(--line);border-radius:10px;
+  padding:8px 14px;text-align:center;min-width:82px}
+.metric small{display:block;color:var(--muted);font-size:.68rem;text-transform:uppercase;letter-spacing:1px}
+.metric b{font-size:1.05rem}
+.session-actions{margin-top:16px;display:flex;align-items:center;gap:16px}
+.hint{color:var(--muted);font-size:.85rem}
+
+/* ---------- boutons ---------- */
+.btn{background:var(--panel2);border:1px solid #2d3559;color:var(--txt);
+  padding:9px 18px;border-radius:10px;cursor:pointer;font-size:.92rem;font-weight:600;transition:.18s}
+.btn:hover{border-color:var(--neon);box-shadow:0 0 12px rgba(108,92,231,.35)}
+.btn.primary{background:linear-gradient(135deg,var(--neon),#4834b8);border-color:transparent}
+.btn.big{padding:14px 30px;font-size:1.05rem}
+.btn.ghost{background:transparent}
+.btn.danger{border-color:var(--bad);color:var(--bad)}
+.btn-row{display:flex;gap:14px;margin-top:20px;justify-content:center}
+
+/* ---------- grille leçons ---------- */
+.lesson-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px}
+.lesson{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+  padding:18px;cursor:pointer;transition:.18s;position:relative;overflow:hidden}
+.lesson:hover{transform:translateY(-3px);border-color:var(--neon);box-shadow:0 8px 24px rgba(108,92,231,.25)}
+.lesson .lvl{font-size:.7rem;letter-spacing:1px;color:var(--neon2);text-transform:uppercase;font-weight:700}
+.lesson h3{margin:6px 0 8px}
+.lesson p{color:var(--muted);font-size:.82rem;line-height:1.4}
+.lesson .stars{margin-top:10px;color:var(--warn);letter-spacing:2px}
+.lesson .best{position:absolute;top:14px;right:14px;font-size:.72rem;color:var(--ok);font-weight:700}
+
+/* ---------- écran résultat ---------- */
+.result{position:fixed;inset:0;background:rgba(8,10,20,.8);backdrop-filter:blur(6px);
+  display:flex;align-items:center;justify-content:center;z-index:30}
+.result-card{background:var(--panel2);border:1px solid var(--line);border-radius:18px;
+  padding:30px 34px;width:min(520px,92vw);animation:pop .3s ease;text-align:center}
+@keyframes pop{from{transform:scale(.9);opacity:0}to{transform:scale(1);opacity:1}}
+.result-card h3{font-size:1.5rem;margin-bottom:18px}
+.result-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+.r-metric{background:var(--panel);border-radius:12px;padding:12px 6px}
+.r-metric b{font-size:1.4rem;color:var(--neon2);display:block}
+.r-metric small{color:var(--muted)}
+.result-keys{min-height:24px;color:var(--muted);font-size:.85rem;margin-bottom:16px}
+.result-actions{display:flex;gap:12px;justify-content:center}
+
+/* ---------- stats ---------- */
+.stats-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.stat-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px;margin-bottom:16px}
+.stat-card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px}
+.stat-card small{color:var(--muted);display:block;font-size:.72rem;text-transform:uppercase;letter-spacing:1px}
+.stat-card b{font-size:1.7rem;color:var(--neon2)}
+.chart-wrap h3{margin-bottom:12px;color:var(--muted);font-size:.85rem;text-transform:uppercase;letter-spacing:1.5px}
+#chart{width:100%;height:200px;background:var(--panel);border-radius:10px}
+.weak-keys{display:flex;flex-wrap:wrap;gap:8px}
+.weak-key{background:var(--panel2);border:1px solid var(--bad);color:var(--txt);
+  border-radius:8px;padding:8px 14px;font-weight:700;font-family:monospace}
+.weak-key small{display:block;color:var(--bad);font-size:.65rem}
+
+/* ---------- divers ---------- */
+.center-card{max-width:520px;margin:60px auto;text-align:center;
+  background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:40px}
+.center-card h2{font-size:1.6rem;margin-bottom:10px}
+.center-card p{color:var(--muted)}
+.tip{color:var(--muted);font-size:.85rem;line-height:1.5}
+.footer{text-align:center;color:var(--muted);font-size:.78rem;padding:26px 0 34px}
+#focus-mask{position:fixed;inset:0;z-index:40;background:rgba(8,10,20,.7);backdrop-filter:blur(3px);
+  display:flex;align-items:center;justify-content:center}
+#focus-mask div{background:var(--panel2);padding:18px 34px;border-radius:14px;
+  border:1px solid var(--neon);font-size:1.1rem;box-shadow:0 0 30px rgba(108,92,231,.4)}

@@ -1,174 +1,155 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="KeyTrain — entraîneur de frappe QWERTY 100 % local, aucune connexion Internet requise.">
-  <title>KeyTrain — Frappe QWERTY 100 % local</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⌨️</text></svg>">
-  <link rel="stylesheet" href="css/style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QwertyLab — Entraîneur de frappe hors-ligne</title>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="bg-blobs" aria-hidden="true"><span></span><span></span><span></span></div>
-  <div class="bg-grid" aria-hidden="true"></div>
 
-  <header class="topbar">
-    <div class="logo" id="logo-home" role="button" tabindex="0" title="Retour à l'accueil">
-      <span class="logo-icon">⌨</span>
-      <span class="logo-text">Key<em>Train</em></span>
-      <span class="logo-badge">100&nbsp;% local</span>
-    </div>
-    <nav class="topnav">
-      <button class="nav-btn" id="btn-stats" type="button">📊 Progression</button>
-      <button class="nav-btn" id="btn-sound" type="button" aria-pressed="true">🔊 Son</button>
-    </nav>
-  </header>
+<div class="scanlines"></div>
 
-  <main>
-    <!-- ============ ACCUEIL ============ -->
-    <section id="view-home" class="view">
-      <div class="hero">
-        <h1 class="hero-title">Tape <span class="grad">plus vite</span>.<br>Bien <span class="grad2">place tes doigts</span>.</h1>
-        <p class="hero-sub">Un entraîneur de frappe QWERTY entièrement hors-ligne : aucun site externe, aucune connexion.
-        Juste toi, ton clavier et ta progression.</p>
-      </div>
-
-      <div class="panel">
-        <div class="panel-head">
-          <h2>Choisis ton exercice</h2>
-          <div class="lang-switch" role="group" aria-label="Langue">
-            <button class="chip lang-chip active" data-lang="fr" type="button">🇫🇷 FR</button>
-            <button class="chip lang-chip" data-lang="en" type="button">🇬🇧 EN</button>
-          </div>
-        </div>
-
-        <div class="mode-grid">
-          <div class="mode-card active" data-mode="keys" role="button" tabindex="0">
-            <span class="mode-icon">🎯</span>
-            <span class="mode-name">Touches</span>
-            <span class="mode-desc">Ligne de base <b>ASDF&nbsp;JKL;</b> puis toutes les rangées. Parfait pour placer les doigts.</span>
-            <span class="mode-levels" data-levels="keys">
-              <button class="chip sub active" data-level="home" type="button">Ligne de base</button>
-              <button class="chip sub" data-level="top" type="button">+ Rangée haute</button>
-              <button class="chip sub" data-level="all" type="button">Tout le clavier</button>
-            </span>
-          </div>
-
-          <div class="mode-card" data-mode="words" role="button" tabindex="0">
-            <span class="mode-icon">📝</span>
-            <span class="mode-name">Mots</span>
-            <span class="mode-desc">Des mots aléatoires pour enchaîner les frappes sans réfléchir.</span>
-            <span class="mode-levels" data-levels="words">
-              <button class="chip sub active" data-level="easy" type="button">Facile</button>
-              <button class="chip sub" data-level="normal" type="button">Normal</button>
-              <button class="chip sub" data-level="hard" type="button">Difficile</button>
-            </span>
-          </div>
-
-          <div class="mode-card" data-mode="phrases" role="button" tabindex="0">
-            <span class="mode-icon">💬</span>
-            <span class="mode-name">Phrases</span>
-            <span class="mode-desc">Des phrases complètes : rythme, ponctuation et majuscules.</span>
-          </div>
-
-          <div class="mode-card" data-mode="time" role="button" tabindex="0">
-            <span class="mode-icon">⏱️</span>
-            <span class="mode-name">Chrono</span>
-            <span class="mode-desc">Un sprint chronométré, comme sur les vrais tests de vitesse.</span>
-            <span class="mode-levels" data-levels="time">
-              <button class="chip sub" data-duration="30" type="button">30 s</button>
-              <button class="chip sub active" data-duration="60" type="button">60 s</button>
-              <button class="chip sub" data-duration="120" type="button">120 s</button>
-            </span>
-          </div>
-        </div>
-
-        <div class="home-actions">
-          <button class="btn-primary" id="btn-start" type="button">Commencer <span class="kbd-hint">Entrée</span></button>
-          <label class="switch-label">
-            <input type="checkbox" id="opt-keyboard" checked>
-            <span>Afficher le clavier</span>
-          </label>
-        </div>
-      </div>
-
-      <div class="best-strip" id="best-strip" hidden>
-        <span>🏆 Records personnels :</span>
-        <span id="best-strip-content"></span>
-      </div>
-    </section>
-
-    <!-- ============ ENTRAÎNEMENT ============ -->
-    <section id="view-train" class="view" hidden>
-      <div class="hud">
-        <div class="hud-item"><span class="hud-label">Vitesse</span><span class="hud-value" id="hud-wpm">0</span><span class="hud-unit">MPM</span></div>
-        <div class="hud-item"><span class="hud-label">Précision</span><span class="hud-value" id="hud-acc">100</span><span class="hud-unit">%</span></div>
-        <div class="hud-item"><span class="hud-label">Erreurs</span><span class="hud-value err" id="hud-err">0</span><span class="hud-unit"></span></div>
-        <div class="hud-item"><span class="hud-label">Temps</span><span class="hud-value" id="hud-time">0:00</span><span class="hud-unit"></span></div>
-        <button class="nav-btn hud-quit" id="btn-quit" type="button" title="Quitter l'exercice">✕ Quitter</button>
-      </div>
-
-      <div class="progress"><div class="progress-bar" id="progress-bar"></div></div>
-
-      <div class="text-zone">
-        <div class="text-display" id="text-display" aria-label="Texte à taper"></div>
-      </div>
-
-      <div class="kb-zone" id="kb-zone">
-        <div class="finger-legend" id="finger-legend"></div>
-        <div class="keyboard" id="keyboard"></div>
-      </div>
-    </section>
-
-    <!-- ============ PROGRESSION ============ -->
-    <section id="view-stats" class="view" hidden>
-      <div class="panel wide">
-        <div class="panel-head">
-          <h2>📊 Ta progression</h2>
-          <button class="nav-btn" id="btn-stats-back" type="button">← Retour</button>
-        </div>
-        <div class="stats-cards" id="stats-cards"></div>
-        <div class="chart-block">
-          <h3>Vitesse au fil des sessions (MPM)</h3>
-          <canvas id="stats-chart" height="180"></canvas>
-        </div>
-        <div class="chart-block">
-          <h3>🔥 Carte de chaleur des erreurs (tes touches faibles)</h3>
-          <div class="keyboard heat" id="keyboard-heat"></div>
-          <p class="heat-hint">Plus une touche est rouge, plus tu te trompes dessus. Travaille ces touches en mode « Touches ».</p>
-        </div>
-        <button class="btn-danger" id="btn-clear-history" type="button">Effacer mon historique</button>
-      </div>
-    </section>
-  </main>
-
-  <!-- ============ MODALE RÉSULTATS ============ -->
-  <div class="modal-overlay" id="results-modal" hidden>
-    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="res-title">
-      <div class="record-banner" id="record-banner" hidden>🏆 Nouveau record personnel !</div>
-      <h2 id="res-title">Résultats</h2>
-      <div class="res-hero">
-        <div class="res-wpm"><span id="res-wpm">0</span><span class="res-wpm-unit">MPM</span></div>
-        <div class="res-sub" id="res-sub">mots par minute</div>
-      </div>
-      <div class="res-grid">
-        <div class="res-cell"><span class="res-num" id="res-acc">0%</span><span class="res-lab">Précision</span></div>
-        <div class="res-cell"><span class="res-num err" id="res-err">0</span><span class="res-lab">Erreurs</span></div>
-        <div class="res-cell"><span class="res-num" id="res-chars">0</span><span class="res-lab">Caractères justes</span></div>
-        <div class="res-cell"><span class="res-num" id="res-time">0:00</span><span class="res-lab">Durée</span></div>
-      </div>
-      <div class="res-chart-block">
-        <canvas id="res-chart" height="110"></canvas>
-      </div>
-      <div class="res-actions">
-        <button class="btn-primary" id="btn-again" type="button">🔁 Rejouer</button>
-        <button class="nav-btn" id="btn-home" type="button">🏠 Accueil</button>
-      </div>
-    </div>
+<header class="topbar">
+  <div class="logo">Qwerty<span>Lab</span></div>
+  <nav class="tabs" id="tabs">
+    <button class="tab active" data-mode="learn">🎓 Cours</button>
+    <button class="tab" data-mode="drill">⚡ Cadence</button>
+    <button class="tab" data-mode="wordrush">🔥 Mots</button>
+    <button class="tab" data-mode="stats">📊 Stats</button>
+  </nav>
+  <div class="topbar-right">
+    <div class="live-wpm"><span id="liveWpm">0</span><small>WPM</small></div>
   </div>
+</header>
 
-  <script src="js/words-fr.js"></script>
-  <script src="js/words-en.js"></script>
-  <script src="js/app.js"></script>
+<main class="layout">
+
+  <!-- ===================== PANEL GAUCHE : CLAVIER + MAINS ===================== -->
+  <aside class="side-panel">
+    <section class="panel hands-panel">
+      <h2>🤚 Placement des doigts</h2>
+      <svg viewBox="0 0 300 130" class="hands" id="handsSvg">
+        <!-- mains stylisées : chaque doigt est un path cliquable/surbrillant -->
+        <g id="hand-left">
+          <path class="finger f-l-pinky" data-finger="l-pinky" d="M28 62 q-14 2 -14 16 q0 14 10 16 q8 2 12 -4 l4 -24 z"/>
+          <path class="finger f-l-ring"  data-finger="l-ring"  d="M52 50 q-10 2 -10 18 q0 16 9 18 q8 2 11 -4 l3 -30 z"/>
+          <path class="finger f-l-mid"   data-finger="l-mid"   d="M76 44 q-9 2 -9 20 q0 17 8 19 q8 2 11 -4 l3 -32 z"/>
+          <path class="finger f-l-index" data-finger="l-index" d="M100 48 q-8 2 -8 18 q0 15 8 17 q8 2 11 -4 l3 -28 z"/>
+          <ellipse class="finger f-l-thumb" data-finger="l-thumb" cx="118" cy="102" rx="14" ry="9"/>
+        </g>
+        <g id="hand-right">
+          <path class="finger f-r-pinky" data-finger="r-pinky" d="M272 62 q14 2 14 16 q0 14 -10 16 q-8 2 -12 -4 l-4 -24 z"/>
+          <path class="finger f-r-ring"  data-finger="r-ring"  d="M248 50 q10 2 10 18 q0 16 -9 18 q-8 2 -11 -4 l-3 -30 z"/>
+          <path class="finger f-r-mid"   data-finger="r-mid"   d="M224 44 q9 2 9 20 q0 17 -8 19 q-8 2 -11 -4 l-3 -32 z"/>
+          <path class="finger f-r-index" data-finger="r-index" d="M200 48 q8 2 8 18 q0 15 -8 17 q-8 2 -11 -4 l-3 -28 z"/>
+          <ellipse class="finger f-r-thumb" data-finger="r-thumb" cx="182" cy="102" rx="14" ry="9"/>
+        </g>
+        <text x="150" y="120" class="hands-hint" id="handsHint">Pose tes mains : index sur F et J</text>
+      </svg>
+    </section>
+
+    <section class="panel keyboard-panel">
+      <h2>⌨️ Clavier</h2>
+      <div class="keyboard" id="keyboard"></div>
+    </section>
+
+    <section class="panel tips-panel">
+      <h2>💡 Conseil</h2>
+      <p class="tip" id="tip">Ne regarde pas tes mains. Trouve les petites bosses sur F et J : ce sont tes points d'ancrage.</p>
+    </section>
+  </aside>
+
+  <!-- ===================== ZONE PRINCIPALE ===================== -->
+  <section class="main-area">
+
+    <!-- MODE COURS -->
+    <div class="view" id="view-learn">
+      <div class="lesson-grid" id="lessonGrid"></div>
+    </div>
+
+    <!-- ZONE D'ENTRAINEMENT (partagée learn / drill / wordrush) -->
+    <div class="view hidden" id="view-session">
+      <div class="session-head">
+        <button class="btn back" id="btnBack">← Quitter</button>
+        <h2 class="lesson-title" id="lessonTitle">Leçon</h2>
+        <div class="session-metrics">
+          <div class="metric"><small>Précision</small><b id="mAcc">100%</b></div>
+          <div class="metric"><small>Erreurs</small><b id="mErr">0</b></div>
+          <div class="metric"><small>Temps</small><b id="mTime">0:00</b></div>
+          <div class="metric"><small>WPM</small><b id="mWpm">0</b></div>
+        </div>
+      </div>
+
+      <div class="race-track">
+        <div class="race-car" id="raceCar">🚗</div>
+        <div class="race-finish">🏁</div>
+      </div>
+
+      <div class="text-display" id="textDisplay" tabindex="0"></div>
+
+      <div class="session-actions">
+        <button class="btn ghost" id="btnRestart">↻ Recommencer</button>
+        <p class="hint">Tape le texte ci-dessus — <b>Échap</b> pour quitter</p>
+      </div>
+
+      <div class="result hidden" id="result">
+        <div class="result-card">
+          <h3 id="resultTitle">Terminé !</h3>
+          <div class="result-grid">
+            <div class="r-metric"><b id="rWpm">0</b><small>WPM</small></div>
+            <div class="r-metric"><b id="rAcc">0%</b><small>Précision</small></div>
+            <div class="r-metric"><b id="rTime">0s</b><small>Temps</small></div>
+            <div class="r-metric"><b id="rErr">0</b><small>Erreurs</small></div>
+          </div>
+          <div class="result-keys" id="resultKeys"></div>
+          <div class="result-actions">
+            <button class="btn" id="btnAgain">Rejouer</button>
+            <button class="btn primary" id="btnNext">Suivant →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODE MOTS (config) -->
+    <div class="view hidden" id="view-wordrush">
+      <div class="center-card">
+        <h2>🔥 Mots brûlants</h2>
+        <p>Enchaîne des mots aléatoires le plus vite possible. Choisis ta discipline :</p>
+        <div class="btn-row">
+          <button class="btn big" data-rush="30">30 s</button>
+          <button class="btn big" data-rush="60">60 s</button>
+          <button class="btn big" data-rush="120">2 min</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODE STATS -->
+    <div class="view hidden" id="view-stats">
+      <div class="stats-head">
+        <h2>📊 Tes progrès</h2>
+        <button class="btn danger" id="btnClearStats">Effacer l'historique</button>
+      </div>
+      <div class="stat-cards" id="statCards"></div>
+      <div class="chart-wrap panel">
+        <h3>Évolution WPM</h3>
+        <svg id="chart" viewBox="0 0 600 200" preserveAspectRatio="none"></svg>
+      </div>
+      <div class="chart-wrap panel">
+        <h3>Touches à travailler</h3>
+        <div class="weak-keys" id="weakKeys"></div>
+      </div>
+    </div>
+
+  </section>
+</main>
+
+<footer class="footer">
+  100 % hors-ligne — aucune ressource externe, tes stats restent dans ton navigateur.
+</footer>
+
+<div class="hidden" id="focus-mask"><div>Clique ici et tape !</div></div>
+
+<script src="app.js"></script>
 </body>
 </html>
