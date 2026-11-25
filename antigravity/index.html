@@ -3,639 +3,676 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Keycraft QWERTY — Apprendre la frappe tactile QWERTY &amp; US-International</title>
+  <title>Keycraft QWERTY — Apprendre le clavier QWERTY en s’amusant (Parcours, Jeux &amp; Code)</title>
   <meta
     name="description"
-    content="Studio d’apprentissage progressif du clavier QWERTY pensé pour les francophones : 24 leçons guidées, transition AZERTY vers QWERTY, code, accents US-International et carte thermique par touche."
+    content="Apprenez à taper vite et sans regarder sur votre clavier QWERTY : 6 mondes gamifiés façon TypingClub, mains dynamiques, mini-jeux d’arcade, transition AZERTY, code et accents français US-International."
   />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link
-    href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+    href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap"
     rel="stylesheet"
   />
   <link rel="stylesheet" href="./css/styles.css" />
 </head>
 <body>
-  <header class="site-header">
-    <div class="header-inner">
-      <a href="#studio" class="brand" id="brand-home-link">
-        <span class="brand-keycap" aria-hidden="true">Q</span>
-        <div class="brand-text">
-          <h1 class="brand-title">Keycraft QWERTY</h1>
-          <span class="brand-subtitle">Frappe à 10 doigts · Transition Francophone &amp; Code</span>
+  <!-- Confetti Layer & Achievement Toasts -->
+  <canvas id="confetti-canvas" class="confetti-layer" aria-hidden="true"></canvas>
+  <div id="toast-stack" class="toast-stack" aria-live="polite"></div>
+
+  <!-- =====================================================================
+       TOP HEADER & GAMIFICATION HUD
+       ===================================================================== -->
+  <header class="top-header">
+    <div class="header-bar">
+      <a href="#map" class="brand-logo" id="brand-logo-link">
+        <span class="logo-cap" aria-hidden="true">Q</span>
+        <div>
+          <h1 class="brand-name">Keycraft QWERTY</h1>
+          <span class="brand-tag">Aventure 10 Doigts · Francophones &amp; Code</span>
         </div>
       </a>
 
-      <nav class="main-nav" role="tablist" aria-label="Navigation principale">
+      <nav class="primary-nav" role="tablist" aria-label="Sections principales">
         <button
           type="button"
-          class="nav-tab"
-          id="nav-tab-studio"
+          class="nav-btn"
+          id="tab-btn-map"
           role="tab"
           aria-selected="true"
-          aria-controls="view-studio"
-          data-view="studio"
+          data-nav="map"
         >
-          Atelier
+          🗺️ Parcours
         </button>
         <button
           type="button"
-          class="nav-tab"
-          id="nav-tab-curriculum"
+          class="nav-btn"
+          id="tab-btn-practice"
           role="tab"
           aria-selected="false"
-          aria-controls="view-curriculum"
-          data-view="curriculum"
+          data-nav="practice"
         >
-          Parcours <span class="nav-badge" id="curriculum-progress-badge">0/24</span>
+          ⚡ Entraînement
         </button>
         <button
           type="button"
-          class="nav-tab"
-          id="nav-tab-analytics"
+          class="nav-btn"
+          id="tab-btn-arcade"
           role="tab"
           aria-selected="false"
-          aria-controls="view-analytics"
-          data-view="analytics"
+          data-nav="arcade"
         >
-          Heatmap &amp; Stats
+          🕹️ Arcade
         </button>
         <button
           type="button"
-          class="nav-tab"
-          id="nav-tab-guide"
+          class="nav-btn"
+          id="tab-btn-profile"
           role="tab"
           aria-selected="false"
-          aria-controls="view-guide"
-          data-view="guide"
+          data-nav="profile"
         >
-          Guide Accents &amp; AZERTY
+          🏆 Profil &amp; Guide
         </button>
       </nav>
 
-      <div class="header-controls">
-        <label for="sound-profile-select" class="sr-only">Profil sonore des touches</label>
-        <select id="sound-profile-select" class="pill-select" title="Son mécanique des touches">
-          <option value="thock">Son : Thock PBT</option>
-          <option value="tactile">Son : Switch Tactile</option>
-          <option value="typewriter">Son : Machine</option>
-          <option value="off">Son : Muet</option>
+      <div class="player-hud">
+        <button
+          type="button"
+          class="hud-pill xp-pill"
+          id="hud-rank-btn"
+          title="Voir votre rang et vos trophées"
+        >
+          <span id="hud-rank-icon">🌱</span>
+          <span id="hud-level-txt">Niv. 1</span>
+          <span class="xp-mini-bar" aria-hidden="true">
+            <span class="xp-mini-fill" id="hud-xp-fill" style="width:0%"></span>
+          </span>
+        </button>
+
+        <div class="hud-pill stars-pill" title="Étoiles cumulées dans le parcours">
+          <span>★</span>
+          <span id="hud-stars-txt">0 / 180</span>
+        </div>
+
+        <div class="hud-pill streak-pill" title="Série de jours consécutifs">
+          <span>🔥</span>
+          <span id="hud-streak-txt">0 j</span>
+        </div>
+
+        <label for="sound-select" class="sr-only">Son des touches</label>
+        <select id="sound-select" class="compact-select" title="Profil acoustique du clavier">
+          <option value="thock">🔊 Thock PBT</option>
+          <option value="bubble">🫧 Pop Ludique</option>
+          <option value="tactile">🎛️ Switch Tactile</option>
+          <option value="typewriter">📠 Machine</option>
+          <option value="off">🔇 Muet</option>
         </select>
 
         <button
           type="button"
-          id="theme-toggle-btn"
-          class="icon-btn"
-          aria-label="Basculer le thème clair ou sombre"
-          title="Changer de thème"
+          class="btn-soft is-sm"
+          id="theme-btn"
+          title="Basculer entre le mode clair et sombre"
         >
-          <span id="theme-toggle-label">Mode sombre</span>
+          <span id="theme-btn-icon">🌙</span>
         </button>
       </div>
     </div>
   </header>
 
-  <main class="app-main">
-    <!-- =====================================================================
-         VIEW 1 : STUDIO D'ENTRAÎNEMENT
-         ===================================================================== -->
-    <section id="view-studio" class="view-panel is-active" role="tabpanel" aria-labelledby="nav-tab-studio">
-      <div class="studio-toolbar">
-        <div class="mode-strip" role="group" aria-label="Mode d'entraînement">
-          <button type="button" class="mode-btn is-active" id="mode-btn-lesson" data-mode="lesson">
-            Parcours guidé
-          </button>
-          <button type="button" class="mode-btn" id="mode-btn-adaptive" data-mode="adaptive">
-            Drill adaptatif
-          </button>
-          <button type="button" class="mode-btn" id="mode-btn-words" data-mode="words">
-            Mots
-          </button>
-          <button type="button" class="mode-btn" id="mode-btn-quotes" data-mode="quotes">
-            Citations
-          </button>
-          <button type="button" class="mode-btn" id="mode-btn-code" data-mode="code">
-            Code &amp; Symboles
-          </button>
-          <button type="button" class="mode-btn" id="mode-btn-custom" data-mode="custom">
-            Texte libre
-          </button>
+  <main class="main-shell">
+    <!-- ===================================================================
+         VIEW 1 : ADVENTURE PATH ("PARCOURS" — 6 MONDES, 36 ÉTAPES)
+         =================================================================== -->
+    <section id="view-map" class="app-view is-active" aria-label="Carte du parcours QWERTY">
+      <div class="adventure-hero">
+        <div class="hero-left">
+          <div class="hero-eyebrow" id="hero-eyebrow">PROCHAINE ÉTAPE RECOMMANDÉE</div>
+          <h2 class="hero-title" id="hero-stage-title">Étape 1 · Les repères F et J</h2>
+          <p class="hero-desc" id="hero-stage-desc">
+            Posez vos index sur les ergots tactiles F et J : apprenez étape par étape avec des exercices courts, des mains guidées et des mini-jeux !
+          </p>
+          <div style="display:flex; gap:0.7rem; flex-wrap:wrap; margin-top:1.1rem;">
+            <button type="button" class="btn-3d is-emerald" id="hero-play-btn">
+              ▶ Commencer l’étape 1
+            </button>
+            <button type="button" class="btn-soft" id="placement-test-btn">
+              🎯 Test de niveau express (30s)
+            </button>
+          </div>
         </div>
 
-        <div class="sub-options">
-          <!-- Words mode sub-options -->
-          <div class="chip-group" id="words-corpus-group" hidden>
-            <button type="button" class="chip-btn is-active" id="corpus-en" data-corpus="english">EN</button>
-            <button type="button" class="chip-btn" id="corpus-fr" data-corpus="french_ascii">FR pur</button>
-            <button type="button" class="chip-btn" id="corpus-fr-intl" data-corpus="french_accents">FR accents</button>
-            <button type="button" class="chip-btn" id="corpus-traps" data-corpus="azerty_traps">Pièges AZERTY</button>
+        <div class="hero-actions">
+          <div class="daily-goal-strip" title="Objectif quotidien de 5 minutes de pratique">
+            <span>Objectif du jour : <strong id="daily-min-txt">0 / 5 min</strong></span>
+            <span class="daily-bar">
+              <span class="daily-bar-fill" id="daily-bar-fill" style="width:0%"></span>
+            </span>
           </div>
-
-          <div class="chip-group" id="words-count-group" hidden>
-            <button type="button" class="chip-btn" id="count-15" data-count="15">15</button>
-            <button type="button" class="chip-btn is-active" id="count-30" data-count="30">30</button>
-            <button type="button" class="chip-btn" id="count-60" data-count="60">60</button>
-          </div>
-
-          <!-- Error handling mode -->
-          <div class="chip-group" role="group" aria-label="Comportement en cas d'erreur">
-            <button
-              type="button"
-              class="chip-btn is-active"
-              id="err-mode-stop"
-              data-errmode="stop"
-              title="Bloque le curseur sur la faute pour ancrer le bon geste"
-            >
-              Stop erreur
-            </button>
-            <button
-              type="button"
-              class="chip-btn"
-              id="err-mode-fluid"
-              data-errmode="fluid"
-              title="Avance librement et permet de corriger avec Backspace"
-            >
-              Fluide
-            </button>
-          </div>
+          <span style="font-size:0.78rem; color:var(--ink-500); font-weight:600;">
+            Astuce : cliquez sur n’importe quelle étape ci-dessous pour y accéder librement.
+          </span>
         </div>
       </div>
 
-      <!-- Context Banner & Live Telemetry -->
-      <div class="stage-hud">
-        <div class="lesson-context">
-          <div class="lesson-meta">
-            <div class="lesson-kicker" id="stage-kicker">Module 1 · Leçon 1/24</div>
-            <h2 class="lesson-heading" id="stage-title">Ancrage Index : F et J</h2>
-            <p class="lesson-tip" id="stage-tip">
-              Sentez le relief sous vos deux index (F à gauche, J à droite) sans regarder le clavier.
-            </p>
-          </div>
-          <div class="lesson-nav-btns">
-            <button type="button" class="sm-btn" id="prev-lesson-btn" title="Leçon précédente">
-              ← Préc.
-            </button>
-            <button type="button" class="sm-btn" id="restart-prompt-btn" title="Nouvel essai (Tab)">
-              ↻ Relancer
-            </button>
-            <button type="button" class="sm-btn" id="next-lesson-btn" title="Leçon ou série suivante">
-              Suiv. →
-            </button>
+      <div id="worlds-container" class="worlds-stack"></div>
+    </section>
+
+    <!-- ===================================================================
+         VIEW ARENA : DISTRACTION-FREE STAGE STUDIO (Discovery + Typing + Boss)
+         =================================================================== -->
+    <section id="view-arena" class="app-view" aria-label="Atelier de frappe">
+      <div class="arena-topbar">
+        <div class="arena-title-cluster">
+          <button type="button" class="btn-soft is-sm" id="arena-back-btn">
+            ← Retour
+          </button>
+          <div>
+            <h2 class="arena-stage-heading" id="arena-heading">Étape 1 · Les repères F et J</h2>
+            <div class="arena-stage-sub" id="arena-sub">Gardez les yeux sur l’écran</div>
           </div>
         </div>
 
-        <div class="telemetry-strip" aria-live="polite">
-          <div class="metric-cell">
-            <span class="metric-label">Vitesse</span>
-            <span class="metric-value"><span id="live-wpm">0</span><span class="metric-unit">MPM</span></span>
+        <div class="arena-telemetry">
+          <div class="live-star-meter" id="arena-star-meter" title="Objectif 5 étoiles en direct">
+            <span>★</span><span>★</span><span>★</span><span>★</span><span>★</span>
           </div>
-          <div class="metric-cell">
-            <span class="metric-label">Précision</span>
-            <span class="metric-value"><span id="live-accuracy">100</span><span class="metric-unit">%</span></span>
+          <div class="combo-pill" id="arena-combo-pill">Combo ×0</div>
+          <div class="telemetry-box">
+            <span>Vitesse</span>
+            <span class="telemetry-val" id="arena-wpm">0</span>
+            <span style="font-size:0.7rem; color:var(--ink-500);">MPM</span>
           </div>
-          <div class="metric-cell">
-            <span class="metric-label">Avancée</span>
-            <span class="metric-value"><span id="live-progress">0</span><span class="metric-unit">%</span></span>
+          <div class="telemetry-box">
+            <span>Précision</span>
+            <span class="telemetry-val" id="arena-acc">100%</span>
           </div>
-          <div class="metric-cell">
-            <span class="metric-label">Série</span>
-            <span class="metric-value"><span id="live-streak">0</span><span class="metric-unit">j</span></span>
+          <div class="telemetry-box" id="arena-timer-box" hidden>
+            <span>⏱️</span>
+            <span class="telemetry-val" id="arena-timer">30s</span>
           </div>
+          <button type="button" class="btn-soft is-sm" id="arena-restart-btn" title="Recommencer (Tab)">
+            ↻ Rejouer
+          </button>
         </div>
       </div>
 
-      <!-- Custom Prompt Panel -->
-      <div class="custom-text-panel" id="custom-text-panel" hidden>
-        <label for="custom-text-input" class="lesson-kicker" style="display:block; margin-bottom:0.4rem;">
-          Collez votre texte ou extrait de code à travailler en QWERTY
-        </label>
-        <textarea
-          id="custom-text-input"
-          class="custom-textarea"
-          placeholder="Ex: const greet = (name) => `Hello, ${name}!`;"
-        ></textarea>
-        <button type="button" class="primary-btn" id="apply-custom-text-btn">
-          Charger sur le pupitre
-        </button>
+      <!-- Smart AZERTY Physical Mismatch Detector -->
+      <div class="azerty-helper-banner" id="azerty-mismatch-banner" hidden>
+        <span>
+          💡 <strong>Votre système semble réglé en AZERTY !</strong> Voulez-vous simuler un vrai clavier QWERTY US directement sur vos touches actuelles ?
+        </span>
+        <div style="display:flex; gap:0.5rem;">
+          <button type="button" class="btn-3d is-cobalt" style="height:34px; font-size:0.8rem;" id="enable-scancode-now-btn">
+            Activer QWERTY en 1 clic
+          </button>
+          <button type="button" class="btn-soft is-sm" id="dismiss-azerty-banner-btn">
+            Ignorer
+          </button>
+        </div>
       </div>
 
-      <!-- Session Completion Card -->
-      <article class="result-banner" id="session-result-banner" hidden aria-live="assertive">
-        <div class="result-top">
-          <div class="result-title-group">
-            <h2 id="result-heading">Série terminée !</h2>
-            <p class="result-subtitle" id="result-feedback">
-              Excellente régularité. Continuez sans baisser les yeux vers les touches.
-            </p>
-          </div>
-          <div class="stars-display" id="result-stars" aria-label="Étoiles obtenues"></div>
+      <!-- CELEBRATION & END-OF-STAGE RESULT SCREEN -->
+      <article class="celebration-card" id="celebration-card" hidden aria-live="assertive">
+        <div class="celeb-stars-row" id="celeb-stars-row">
+          <span class="celeb-star">★</span>
+          <span class="celeb-star">★</span>
+          <span class="celeb-star">★</span>
+          <span class="celeb-star">★</span>
+          <span class="celeb-star">★</span>
         </div>
 
-        <div class="result-metrics-grid">
-          <div class="result-stat-box">
-            <div class="label">Vitesse nette</div>
-            <div class="val" id="res-wpm">0 MPM</div>
+        <h3 class="celeb-title" id="celeb-title">Bravo, étape réussie !</h3>
+        <p class="celeb-sub" id="celeb-sub">
+          Excellente régularité ! Vos doigts prennent leurs marques sur le clavier QWERTY.
+        </p>
+
+        <div class="xp-gain-banner" id="celeb-xp-banner">
+          <span>✨ <strong id="celeb-xp-val">+95 XP</strong> gagnés</span>
+          <span>·</span>
+          <span id="celeb-rank-progress">Niveau 1 (65%)</span>
+        </div>
+
+        <div class="celeb-stats-grid">
+          <div class="celeb-stat">
+            <div class="lbl">Vitesse nette</div>
+            <div class="num" id="celeb-wpm">0 MPM</div>
           </div>
-          <div class="result-stat-box">
-            <div class="label">Précision</div>
-            <div class="val" id="res-acc">100 %</div>
+          <div class="celeb-stat">
+            <div class="lbl">Précision</div>
+            <div class="num" id="celeb-acc">100 %</div>
           </div>
-          <div class="result-stat-box">
-            <div class="label">Vitesse brute</div>
-            <div class="val" id="res-raw">0 MPM</div>
+          <div class="celeb-stat">
+            <div class="lbl">Combo Max</div>
+            <div class="num" id="celeb-combo">×0</div>
           </div>
-          <div class="result-stat-box">
-            <div class="label">Durée</div>
-            <div class="val" id="res-time">0.0 s</div>
+          <div class="celeb-stat">
+            <div class="lbl">Temps</div>
+            <div class="num" id="celeb-time">0.0 s</div>
           </div>
         </div>
 
-        <div class="result-weak-keys">
-          <div id="res-weak-summary" class="lesson-tip" style="margin:0;">
-            Aucune touche hésitante détectée sur cet exercice.
+        <div class="sparkline-box" id="celeb-sparkline-box">
+          <div style="display:flex; justify-content:space-between; font-size:0.75rem; font-weight:700; color:var(--ink-500); margin-bottom:0.35rem;">
+            <span>Courbe de régularité (MPM par seconde)</span>
+            <span id="celeb-weak-keys-txt">Zéro touche fragile !</span>
           </div>
-          <div style="display:flex; gap:0.55rem; flex-wrap:wrap;">
-            <button type="button" class="secondary-btn" id="res-drill-weak-btn" hidden>
-              Cibler ces touches
-            </button>
-            <button type="button" class="secondary-btn" id="res-retry-btn">
-              ↻ Recommencer (Tab)
-            </button>
-            <button type="button" class="primary-btn" id="res-next-btn">
-              Continuer (Entrée) →
-            </button>
-          </div>
+          <div id="celeb-sparkline-svg-wrap" style="height:56px; width:100%;"></div>
+        </div>
+
+        <div class="celeb-actions">
+          <button type="button" class="btn-soft" id="celeb-drill-weak-btn" hidden>
+            🎯 Cibler mes touches hésitantes
+          </button>
+          <button type="button" class="btn-soft" id="celeb-retry-btn">
+            ↻ Recommencer (Tab)
+          </button>
+          <button type="button" class="btn-3d is-emerald" id="celeb-next-btn">
+            Continuer (Entrée ↵) →
+          </button>
         </div>
       </article>
 
-      <!-- Main Typing Stage -->
-      <div class="typing-stage-wrap is-focused" id="typing-stage-wrap">
-        <div class="stage-progress-track" aria-hidden="true">
-          <div class="stage-progress-bar" id="stage-progress-bar"></div>
+      <!-- PHASE A : INTERACTIVE KEY DISCOVERY CARD -->
+      <div class="discovery-card" id="discovery-card" hidden>
+        <span class="discovery-step-pill" id="disc-step-pill">Découverte guidée · 1/2</span>
+        <div class="discovery-giant-key" id="disc-giant-key">F</div>
+        <h3 class="discovery-prompt" id="disc-title">Touche F — Index gauche</h3>
+        <p class="discovery-explain" id="disc-explain">
+          Posez votre index gauche sur F et appuyez dessus pour continuer !
+        </p>
+        <div style="display:flex; align-items:center; justify-content:center; gap:1rem; margin-top:0.5rem;">
+          <div class="discovery-dots" id="disc-dots"></div>
+          <button type="button" class="btn-soft is-sm" id="skip-discovery-btn">
+            Passer à l’exercice →
+          </button>
+        </div>
+      </div>
+
+      <!-- PHASE B : TYPING PROMPT CARD -->
+      <div class="typing-card is-focused" id="typing-card">
+        <div class="typing-progress-rail" aria-hidden="true">
+          <div class="typing-progress-fill" id="typing-progress-fill"></div>
         </div>
 
-        <div class="coaching-bar">
-          <div class="next-key-callout" id="next-key-callout">
-            <span>Prochaine touche :</span>
-            <span class="key-pill" id="callout-key">F</span>
+        <div class="coach-ribbon">
+          <div class="coach-target">
+            <span>Touche cible :</span>
+            <span class="mini-cap" id="coach-key-cap">F</span>
             <span>·</span>
-            <span class="finger-pill" id="callout-finger">Index gauche</span>
+            <strong id="coach-finger-txt" style="color:var(--ink-900);">Index gauche</strong>
           </div>
 
-          <div style="display:flex; align-items:center; gap:0.65rem;">
-            <span class="deadkey-indicator" id="deadkey-indicator" hidden>
-              Touche morte active — tapez la lettre
+          <div style="display:flex; align-items:center; gap:0.6rem;">
+            <span
+              id="deadkey-pill"
+              class="hud-pill"
+              style="height:25px; background:var(--gold-soft); color:var(--gold-lip);"
+              hidden
+            >
+              Touche morte active — tapez la voyelle
             </span>
-            <span class="stage-shortcuts-hint">
-              <span><kbd class="key-pill">Tab</kbd> Recommencer</span>
+            <span id="caps-alert-pill" class="hud-pill" style="height:25px; background:var(--danger-soft); color:var(--danger);" hidden>
+              ⚠ Verr. Maj activé
+            </span>
+            <span style="font-size:0.74rem; color:var(--ink-500);">
+              <kbd class="mini-cap" style="height:21px; font-size:0.7rem;">Tab</kbd> Relancer
             </span>
           </div>
         </div>
 
-        <div class="prompt-viewport" id="prompt-viewport">
-          <div class="prompt-text" id="prompt-text" aria-label="Texte à dactylographier"></div>
-        </div>
-
-        <div class="stage-alert" id="capslock-warning" hidden>
-          ⚠ Verr. Maj (Caps Lock) est activé — désactivez-le et utilisez plutôt la touche Shift.
+        <div class="prompt-window" id="prompt-window">
+          <div class="tc-stream" id="tc-stream" aria-label="Texte à taper"></div>
         </div>
 
         <input
           type="text"
-          id="typing-capture"
-          class="hidden-capture"
+          id="hidden-typing-input"
+          class="hidden-input"
           autocomplete="off"
           autocorrect="off"
           autocapitalize="off"
           spellcheck="false"
-          aria-label="Zone de saisie clavier QWERTY"
+          aria-label="Saisie clavier QWERTY"
         />
       </div>
 
-      <!-- Sculpted Mechanical ANSI QWERTY Deck -->
-      <div class="keyboard-deck" aria-label="Clavier visuel QWERTY interactif">
-        <div class="deck-top-bar">
-          <div class="deck-plate-label">
-            <span class="status-led" aria-hidden="true"></span>
-            <span>ANSI QWERTY 60%</span>
-            <label for="layout-variant-select" class="sr-only">Variante de disposition QWERTY</label>
-            <select id="layout-variant-select" class="pill-select" style="height:27px; font-size:0.72rem;">
-              <option value="us-ansi">Disposition : US Standard (ANSI)</option>
-              <option value="us-intl">Disposition : US-International (Accents FR)</option>
+      <!-- PHASE C : EMBEDDED ARCADE STAGE SHELL (For World Mini-Game Checkpoints) -->
+      <div class="arcade-stage-shell" id="arena-arcade-shell" hidden>
+        <div class="arcade-hud-bar">
+          <div style="display:flex; align-items:center; gap:0.8rem; font-weight:800; font-size:0.88rem;">
+            <span id="arena-arc-score">Score : 0 / 150</span>
+            <span id="arena-arc-shields">🛡️🛡️🛡️</span>
+          </div>
+          <span style="font-size:0.8rem; color:#94a3b8;">
+            Tapez directement au clavier — aucun clic requis !
+          </span>
+        </div>
+        <div class="arcade-canvas-wrap">
+          <canvas id="arena-arcade-canvas" class="arcade-canvas"></canvas>
+        </div>
+      </div>
+
+      <!-- SCULPTED ANSI KEYBOARD + TRANSLUCENT DYNAMIC HANDS OVERLAY -->
+      <div class="keyboard-studio" id="keyboard-studio">
+        <div class="kb-controls-row">
+          <div style="display:flex; align-items:center; gap:0.55rem; flex-wrap:wrap;">
+            <label for="layout-select" class="sr-only">Disposition QWERTY</label>
+            <select id="layout-select" class="compact-select" style="height:28px; font-size:0.73rem;">
+              <option value="us-ansi">🇺🇸 QWERTY US Standard</option>
+              <option value="us-intl">🇫🇷 QWERTY US-International (Accents FR)</option>
             </select>
+
+            <button type="button" class="kb-pill-btn" id="btn-err-mode" aria-pressed="true" title="Bloquer sur les fautes pour apprendre le geste juste">
+              Mode : Stop erreur
+            </button>
           </div>
 
-          <div class="deck-toggles">
-            <button
-              type="button"
-              class="deck-toggle-btn"
-              id="toggle-zones-btn"
-              aria-pressed="true"
-              title="Colorer les zones correspondant à chaque doigt"
-            >
-              Zones doigts
+          <div class="kb-toggles">
+            <button type="button" class="kb-pill-btn" id="btn-toggle-hands" aria-pressed="true">
+              ✋ Mains guidées
+            </button>
+            <button type="button" class="kb-pill-btn" id="btn-toggle-zones" aria-pressed="true">
+              🎨 Zones doigts
+            </button>
+            <button type="button" class="kb-pill-btn" id="btn-toggle-azerty" aria-pressed="false">
+              🇫🇷 Repères ex-AZERTY
+            </button>
+            <button type="button" class="kb-pill-btn" id="btn-toggle-blind" aria-pressed="false">
+              🙈 Clavier muet
             </button>
             <button
               type="button"
-              class="deck-toggle-btn"
-              id="toggle-azerty-btn"
+              class="kb-pill-btn"
+              id="btn-toggle-scancode"
               aria-pressed="false"
-              title="Afficher en discret l'ancienne touche AZERTY sur les touches déplacées"
+              title="Traduit vos touches physiques en QWERTY même si votre OS est resté en AZERTY"
             >
-              Repères ex-AZERTY
-            </button>
-            <button
-              type="button"
-              class="deck-toggle-btn"
-              id="toggle-blind-btn"
-              aria-pressed="false"
-              title="Masquer toutes les légendes pour tester votre vraie mémoire musculaire"
-            >
-              Clavier muet (Aveugle)
-            </button>
-            <button
-              type="button"
-              class="deck-toggle-btn"
-              id="toggle-scancode-btn"
-              aria-pressed="false"
-              title="Simuler un clavier QWERTY US même si votre OS est encore configuré en AZERTY"
-            >
-              Forcer QWERTY (OS AZERTY)
+              ⌨️ Forcer QWERTY (OS AZERTY)
             </button>
           </div>
         </div>
 
-        <div class="keyboard-well">
-          <div class="ansi-keyboard show-zones" id="ansi-keyboard"></div>
-        </div>
-
-        <!-- Biomechanical Dual-Hand Finger Indicator -->
-        <div class="hands-guide-bar">
-          <div class="hands-svg-wrap" aria-hidden="true">
-            <div class="hand-card">
-              <span>Main gauche</span>
-              <svg class="hand-svg" viewBox="0 0 120 56">
-                <rect class="finger-shape" data-hand-finger="lp" x="6" y="18" width="15" height="32" rx="7.5" />
-                <rect class="finger-shape" data-hand-finger="lr" x="26" y="8" width="16" height="42" rx="8" />
-                <rect class="finger-shape" data-hand-finger="lm" x="47" y="3" width="16" height="47" rx="8" />
-                <rect class="finger-shape" data-hand-finger="li" x="68" y="9" width="16" height="41" rx="8" />
-                <rect class="finger-shape" data-hand-finger="thumb" x="91" y="27" width="22" height="15" rx="7.5" />
-              </svg>
-            </div>
-
-            <div class="hand-card">
-              <svg class="hand-svg" viewBox="0 0 120 56">
-                <rect class="finger-shape" data-hand-finger="thumb" x="7" y="27" width="22" height="15" rx="7.5" />
-                <rect class="finger-shape" data-hand-finger="ri" x="36" y="9" width="16" height="41" rx="8" />
-                <rect class="finger-shape" data-hand-finger="rm" x="57" y="3" width="16" height="47" rx="8" />
-                <rect class="finger-shape" data-hand-finger="rr" x="78" y="8" width="16" height="42" rx="8" />
-                <rect class="finger-shape" data-hand-finger="rp" x="99" y="18" width="15" height="32" rx="7.5" />
-              </svg>
-              <span>Main droite</span>
-            </div>
+        <div class="kb-well">
+          <div class="kb-stage-inner" id="kb-stage-inner">
+            <div class="ansi-grid show-zones" id="ansi-keyboard"></div>
+            <svg id="hands-overlay-svg" class="hands-overlay-svg" aria-hidden="true"></svg>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- =====================================================================
-         VIEW 2 : PARCOURS PROGRESSIF (24 LEÇONS)
-         ===================================================================== -->
-    <section id="view-curriculum" class="view-panel" role="tabpanel" aria-labelledby="nav-tab-curriculum">
-      <div class="section-header">
+    <!-- ===================================================================
+         VIEW 2 : FREE PRACTICE ("ENTRAÎNEMENT LIBRE")
+         =================================================================== -->
+    <section id="view-practice" class="app-view" aria-label="Entraînement libre à la carte">
+      <div class="adventure-hero" style="margin-bottom:1.4rem;">
         <div>
-          <h2>Parcours d’apprentissage complet (24 leçons)</h2>
-          <p>
-            Du premier contact avec les ergots F et J jusqu’au code et aux accents français en US-International.
-            Toutes les leçons sont accessibles librement selon votre niveau actuel.
+          <div class="hero-eyebrow">ATELIER À LA CARTE</div>
+          <h2 class="hero-title">Entraînement Libre &amp; Chronométré</h2>
+          <p class="hero-desc">
+            Lancez une session immédiate selon votre envie : ciblage intelligent de vos faiblesses, sprint chronométré, code ou français accentué.
           </p>
         </div>
-        <div id="curriculum-stars-summary" class="lesson-keys-preview" style="font-size:0.84rem; padding:0.45rem 0.8rem;">
-          0 / 72 ★
-        </div>
       </div>
 
-      <div id="curriculum-modules-container"></div>
-    </section>
-
-    <!-- =====================================================================
-         VIEW 3 : ANALYTIQUE & CARTE THERMIQUE PAR TOUCHE
-         ===================================================================== -->
-    <section id="view-analytics" class="view-panel" role="tabpanel" aria-labelledby="nav-tab-analytics">
-      <div class="section-header">
-        <div>
-          <h2>Carte thermique &amp; Diagnostic biomécanique</h2>
-          <p>
-            Chaque frappe mesure votre précision et votre temps de réaction en millisecondes afin d’isoler vos hésitations.
-          </p>
-        </div>
-        <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
-          <button type="button" class="primary-btn" id="analytics-launch-drill-btn">
-            Entraîner mes touches faibles
-          </button>
-          <button type="button" class="secondary-btn" id="reset-stats-btn">
-            Réinitialiser les données
-          </button>
-        </div>
-      </div>
-
-      <div class="stats-overview-row">
-        <div class="stat-tile">
-          <div class="stat-kicker">Meilleure vitesse nette</div>
-          <div class="stat-big" id="stat-best-wpm">0 MPM</div>
-        </div>
-        <div class="stat-tile">
-          <div class="stat-kicker">Caractères validés</div>
-          <div class="stat-big" id="stat-total-chars">0</div>
-        </div>
-        <div class="stat-tile">
-          <div class="stat-kicker">Temps d’entraînement</div>
-          <div class="stat-big" id="stat-total-time">0 min</div>
-        </div>
-        <div class="stat-tile">
-          <div class="stat-kicker">Touches maîtrisées (≥96 %)</div>
-          <div class="stat-big" id="stat-mastered-keys">0</div>
-        </div>
-      </div>
-
-      <div class="heatmap-panel">
-        <div class="deck-top-bar" style="padding-bottom:0.85rem;">
+      <div class="practice-modes-grid">
+        <article class="practice-card">
           <div>
-            <strong style="font-size:0.95rem;">Précision &amp; Vitesse par touche QWERTY</strong>
-            <div id="heatmap-hover-detail" class="lesson-tip" style="margin-top:0.15rem;">
-              Survolez une touche pour inspecter sa précision et sa latence moyenne (ms).
+            <span class="discovery-step-pill">IA Locale</span>
+            <h3>🎯 Drill Adaptatif Intelligent</h3>
+            <p>
+              Analyse vos fautes et vos temps d’hésitation en millisecondes pour générer un exercice sur vos touches les plus fragiles.
+            </p>
+          </div>
+          <button type="button" class="btn-3d" id="prac-adaptive-btn">
+            Lancer mon Drill ciblé
+          </button>
+        </article>
+
+        <article class="practice-card">
+          <div>
+            <span class="discovery-step-pill">Style Monkeytype</span>
+            <h3>⏱️ Sprint Chronométré</h3>
+            <p>Mesurez votre vitesse pure en mots par minute sur l’anglais, le français ou les pièges AZERTY.</p>
+            <div style="display:flex; gap:0.4rem; flex-wrap:wrap; margin-top:0.75rem;">
+              <select id="prac-corpus-select" class="compact-select">
+                <option value="english">🇬🇧 Anglais fréquent</option>
+                <option value="french_ascii">🇫🇷 Français fluide</option>
+                <option value="french_accents">🇫🇷 Français US-Intl (é è ê ç)</option>
+                <option value="azerty_traps">⚡ Pièges ex-AZERTY</option>
+              </select>
+              <select id="prac-duration-select" class="compact-select">
+                <option value="15">15 sec</option>
+                <option value="30" selected>30 sec</option>
+                <option value="60">60 sec</option>
+                <option value="0">Sans chrono</option>
+              </select>
             </div>
           </div>
-          <div class="heatmap-legend">
-            <span class="heat-swatch">
-              <span class="heat-dot" style="background:var(--success-soft); border:1px solid var(--success);"></span>
-              Maîtrisée (≥96 %)
-            </span>
-            <span class="heat-swatch">
-              <span class="heat-dot" style="background:var(--warning-soft); border:1px solid var(--warning);"></span>
-              En cours (88–95 %)
-            </span>
-            <span class="heat-swatch">
-              <span class="heat-dot" style="background:var(--danger-soft); border:1px solid var(--danger);"></span>
-              À cibler (&lt;88 %)
-            </span>
-          </div>
-        </div>
+          <button type="button" class="btn-3d is-cobalt" id="prac-sprint-btn">
+            Démarrer le Sprint
+          </button>
+        </article>
 
-        <div class="keyboard-well">
-          <div class="ansi-keyboard" id="heatmap-keyboard"></div>
-        </div>
+        <article class="practice-card">
+          <div>
+            <span class="discovery-step-pill">Développeurs</span>
+            <h3>💻 Code &amp; Symboles</h3>
+            <p>
+              Domptez les crochets <code>[]</code>, accolades <code>{}</code>, flèches <code>=&gt;</code> et pipes sur de vrais extraits JS, TS, Python et Git.
+            </p>
+          </div>
+          <button type="button" class="btn-3d is-emerald" id="prac-code-btn">
+            Taper du Code
+          </button>
+        </article>
+
+        <article class="practice-card">
+          <div>
+            <span class="discovery-step-pill">Zen &amp; Sur-mesure</span>
+            <h3>💬 Citations &amp; Texte Libre</h3>
+            <p>Travaillez votre cadence sur des citations inspirantes ou collez votre propre paragraphe.</p>
+          </div>
+          <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+            <button type="button" class="btn-soft" id="prac-quotes-btn" style="flex:1;">
+              Citation
+            </button>
+            <button type="button" class="btn-soft" id="prac-custom-toggle-btn" style="flex:1;">
+              Mon texte
+            </button>
+          </div>
+        </article>
       </div>
 
-      <div class="two-col-panels">
-        <div class="info-panel">
-          <h3>Confusions musculaires fréquentes</h3>
-          <ul class="confusion-list" id="confusion-list"></ul>
-        </div>
-        <div class="info-panel">
-          <h3>Dernières sessions</h3>
-          <ul class="history-list" id="history-list"></ul>
-        </div>
+      <div class="panel-box" id="prac-custom-drawer" hidden>
+        <h3>Collez votre propre texte ou extrait de code</h3>
+        <textarea
+          id="prac-custom-textarea"
+          style="width:100%; min-height:95px; padding:0.75rem; border-radius:10px; border:1px solid var(--border-strong); background:var(--bg-app); font-family:var(--font-mono); margin-bottom:0.75rem;"
+          placeholder="Ex: const hello = (name) => `Bonjour ${name} !`;"
+        ></textarea>
+        <button type="button" class="btn-3d" id="prac-custom-start-btn">
+          Lancer sur le pupitre →
+        </button>
       </div>
     </section>
 
-    <!-- =====================================================================
-         VIEW 4 : GUIDE FRANCOPHONE QWERTY & ACCENTS US-INTERNATIONAL
-         ===================================================================== -->
-    <section id="view-guide" class="view-panel" role="tabpanel" aria-labelledby="nav-tab-guide">
-      <div class="section-header">
-        <div>
-          <h2>Guide pratique du QWERTY pour francophones</h2>
-          <p>
-            Comprendre la logique du clavier QWERTY, réussir sa transition depuis l’AZERTY et écrire un français irréprochable.
-          </p>
-        </div>
-        <button type="button" class="primary-btn" id="guide-start-intl-lesson-btn">
-          Tester la Leçon 24 (Accents FR) →
+    <!-- ===================================================================
+         VIEW 3 : ARCADE STUDIO ("ARCADE" — ASTROTYPE & NITROSPRINT)
+         =================================================================== -->
+    <section id="view-arcade" class="app-view" aria-label="Jeux d'arcade dactylographiques">
+      <div class="arcade-selector">
+        <button type="button" class="arcade-game-card is-selected" id="select-astro-card">
+          <div>
+            <span class="discovery-step-pill">Action &amp; Réflexes</span>
+            <h3 style="margin:0.2rem 0; font-size:1.15rem;">☄️ AstroType — Défense Cosmique</h3>
+            <p style="margin:0; font-size:0.84rem; color:var(--ink-700);">
+              Verrouillez et pulvérisez les météores au laser en tapant leurs mots avant l’impact !
+            </p>
+          </div>
+          <span style="font-size:2rem;">🚀</span>
+        </button>
+
+        <button type="button" class="arcade-game-card" id="select-sprint-card">
+          <div>
+            <span class="discovery-step-pill">Vitesse &amp; Cadence</span>
+            <h3 style="margin:0.2rem 0; font-size:1.15rem;">🏎️ NitroSprint — Duel Turbo</h3>
+            <p style="margin:0; font-size:0.84rem; color:var(--ink-700);">
+              Affrontez un drone rival calibré de 22 à 60 MPM et déclenchez le boost par votre précision !
+            </p>
+          </div>
+          <span style="font-size:2rem;">🏁</span>
         </button>
       </div>
 
-      <div class="guide-grid">
-        <article class="info-panel">
-          <h3>1. Ce qui change par rapport à l’AZERTY</h3>
-          <table class="ref-table">
-            <thead>
-              <tr>
-                <th>Touche</th>
-                <th>Sur AZERTY</th>
-                <th>Sur QWERTY (Gain)</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td><span class="combo-code">Q / A</span></td>
-                <td>A en haut, Q au milieu</td>
-                <td>Inversés : <strong>A</strong> sur la rangée de repos</td>
-              </tr>
-              <tr>
-                <td><span class="combo-code">W / Z</span></td>
-                <td>Z en haut, W en bas</td>
-                <td>Inversés : <strong>W</strong> très accessible en anglais</td>
-              </tr>
-              <tr>
-                <td><span class="combo-code">M</span></td>
-                <td>À droite de L</td>
-                <td>En bas à droite de <strong>N</strong> ; libère <strong>; :</strong></td>
-              </tr>
-              <tr>
-                <td><span class="combo-code">1 – 0</span></td>
-                <td>Nécessite Shift</td>
-                <td><strong>Frappe directe</strong> sans Shift !</td>
-              </tr>
-              <tr>
-                <td><span class="combo-code">. , /</span></td>
-                <td>Point avec Shift</td>
-                <td><strong>Point et virgule directs</strong> sans Shift</td>
-              </tr>
-              <tr>
-                <td><span class="combo-code">[ ] { }</span></td>
-                <td>AltGr gymnastique</td>
-                <td>Accès immédiat à droite de <strong>P</strong></td>
-              </tr>
-            </tbody>
-          </table>
-        </article>
+      <div class="arcade-stage-shell">
+        <div class="arcade-hud-bar">
+          <div style="display:flex; align-items:center; gap:0.65rem; flex-wrap:wrap;">
+            <select id="arcade-pack-select" class="compact-select" style="background:#1e293b; color:#f8fafc; border-color:#334155;">
+              <option value="home">Pack : Rangée de repos (Débutant)</option>
+              <option value="azerty" selected>Pack : Chasse aux pièges AZERTY</option>
+              <option value="english">Pack : Mots QWERTY complets</option>
+              <option value="code">Pack : Code &amp; Symboles Dev</option>
+            </select>
+            <button type="button" class="btn-3d is-emerald" style="height:36px; font-size:0.82rem;" id="arcade-start-btn">
+              ▶ Nouvelle Partie
+            </button>
+          </div>
 
-        <article class="info-panel">
-          <h3>2. Tous les accents français (QWERTY US-International)</h3>
-          <p class="lesson-tip" style="margin-bottom:0.75rem;">
-            Activez <strong>Anglais (États-Unis, international)</strong> sous Windows, Linux ou macOS :
-          </p>
-          <table class="ref-table">
+          <div style="display:flex; align-items:center; gap:0.9rem; font-family:var(--font-mono); font-size:0.85rem; font-weight:700;">
+            <span id="hub-arc-score">Score : 0</span>
+            <span id="hub-arc-shields">🛡️🛡️🛡️</span>
+            <span id="hub-arc-wpm">0 MPM</span>
+            <span id="hub-arc-combo">Combo ×0</span>
+          </div>
+        </div>
+
+        <div class="arcade-canvas-wrap">
+          <canvas id="hub-arcade-canvas" class="arcade-canvas"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================================
+         VIEW 4 : PROFIL, TROPHÉES, HEATMAP & GUIDE ACCENTS FR
+         =================================================================== -->
+    <section id="view-profile" class="app-view" aria-label="Profil, trophées, carte thermique et guide QWERTY">
+      <div class="profile-banner">
+        <div style="display:flex; align-items:center; gap:1rem; flex:1 1 320px;">
+          <div class="rank-badge-circle" id="prof-rank-icon">🌱</div>
+          <div style="flex:1;">
+            <div class="hero-eyebrow" id="prof-level-kicker">NIVEAU 1</div>
+            <h2 style="margin:0; font-size:1.35rem; font-weight:800;" id="prof-rank-title">Explorateur F &amp; J</h2>
+            <div style="font-size:0.8rem; color:var(--ink-700); margin-top:0.15rem;" id="prof-xp-detail">
+              0 XP · Prochain rang à 150 XP
+            </div>
+            <div class="xp-wide-track">
+              <div class="xp-wide-fill" id="prof-xp-bar" style="width:0%"></div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex; gap:1.1rem; flex-wrap:wrap; align-items:center;">
+          <div>
+            <div style="font-size:0.7rem; font-weight:800; color:var(--ink-500); text-transform:uppercase;">Record net</div>
+            <div style="font-family:var(--font-mono); font-size:1.45rem; font-weight:800;" id="prof-best-wpm">0 MPM</div>
+          </div>
+          <div>
+            <div style="font-size:0.7rem; font-weight:800; color:var(--ink-500); text-transform:uppercase;">Frappes justes</div>
+            <div style="font-family:var(--font-mono); font-size:1.45rem; font-weight:800;" id="prof-total-chars">0</div>
+          </div>
+          <div>
+            <div style="font-size:0.7rem; font-weight:800; color:var(--ink-500); text-transform:uppercase;">Pratique</div>
+            <div style="font-family:var(--font-mono); font-size:1.45rem; font-weight:800;" id="prof-total-time">0 min</div>
+          </div>
+          <button type="button" class="btn-soft is-sm" id="reset-progress-btn">
+            Réinitialiser
+          </button>
+        </div>
+      </div>
+
+      <!-- 14 Unlockable Trophies -->
+      <h3 style="margin:0 0 0.75rem; font-size:1.1rem; font-weight:800;">
+        🏆 Salle des Trophées (<span id="unlocked-badges-count">0/14</span>)
+      </h3>
+      <div class="badges-grid" id="badges-grid"></div>
+
+      <!-- Per-Key Heatmap -->
+      <div class="panel-box">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:1rem; flex-wrap:wrap; margin-bottom:0.8rem;">
+          <div>
+            <h3 style="margin:0;">🔥 Carte Thermique de Maîtrise par Touche</h3>
+            <div style="font-size:0.82rem; color:var(--ink-700); margin-top:0.15rem;" id="heatmap-detail-txt">
+              Survolez une touche du clavier pour inspecter votre précision et votre vitesse de réaction en ms.
+            </div>
+          </div>
+          <button type="button" class="btn-3d" style="height:36px; font-size:0.8rem;" id="heatmap-drill-btn">
+            🎯 Travailler mes touches faibles
+          </button>
+        </div>
+
+        <div class="kb-well">
+          <div class="kb-stage-inner">
+            <div class="ansi-grid" id="heatmap-keyboard"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Confusions + Guide Accents US-International -->
+      <div class="split-panels">
+        <div class="panel-box">
+          <h3>🧭 Vos confusions réflexes (ex. AZERTY → QWERTY)</h3>
+          <div id="confusions-container" style="font-size:0.84rem; color:var(--ink-700);"></div>
+        </div>
+
+        <div class="panel-box">
+          <h3>🇫🇷 Aide-mémoire : Accents Français sur QWERTY US-Intl</h3>
+          <table class="clean-table">
             <thead>
               <tr>
-                <th>Caractère</th>
-                <th>Séquence Touche Morte</th>
-                <th>Alternative rapide</th>
+                <th>Accent</th>
+                <th>Combinaison Touche Morte</th>
+                <th>Alternative</th>
               </tr>
             </thead>
             <tbody>
               <tr>
                 <td><strong>é / É</strong></td>
-                <td><span class="combo-code">'</span> puis <span class="combo-code">e / E</span></td>
-                <td><span class="combo-code">AltGr + e</span></td>
+                <td><kbd class="mini-cap">'</kbd> puis <kbd class="mini-cap">e</kbd></td>
+                <td><code>AltGr + e</code></td>
               </tr>
               <tr>
                 <td><strong>è / à / ù</strong></td>
-                <td><span class="combo-code">`</span> puis <span class="combo-code">e / a / u</span></td>
-                <td>Touche sous Échap + voyelle</td>
+                <td><kbd class="mini-cap">`</kbd> puis voyelle</td>
+                <td>Touche sous Échap</td>
               </tr>
               <tr>
                 <td><strong>ê / â / ô / î / û</strong></td>
-                <td><span class="combo-code">Maj + 6 (^)</span> puis voyelle</td>
-                <td>Circonflexe universel</td>
+                <td><kbd class="mini-cap">Maj+6 (^)</kbd> puis voyelle</td>
+                <td>Circonflexe</td>
               </tr>
               <tr>
                 <td><strong>ç / Ç</strong></td>
-                <td><span class="combo-code">'</span> puis <span class="combo-code">c / C</span></td>
-                <td><span class="combo-code">AltGr + ,</span></td>
-              </tr>
-              <tr>
-                <td><strong>ë / ï</strong></td>
-                <td><span class="combo-code">Maj + ' (")</span> puis voyelle</td>
-                <td>Tréma universel</td>
+                <td><kbd class="mini-cap">'</kbd> puis <kbd class="mini-cap">c</kbd></td>
+                <td><code>AltGr + ,</code></td>
               </tr>
               <tr>
                 <td><strong>' ou " seul</strong></td>
-                <td><span class="combo-code">'</span> puis <span class="combo-code">Espace</span></td>
-                <td>Valide le symbole ASCII pur</td>
+                <td><kbd class="mini-cap">'</kbd> puis <kbd class="mini-cap">Espace</kbd></td>
+                <td>Valide le caractère pur</td>
               </tr>
             </tbody>
           </table>
-        </article>
-      </div>
-
-      <article class="info-panel">
-        <h3>3. Les 3 règles d’or pour progresser deux fois plus vite</h3>
-        <div class="two-col-panels" style="margin-top:0.5rem;">
-          <div>
-            <strong>Ne regardez jamais le clavier physique</strong>
-            <p class="lesson-tip">
-              Même si vos touches physiques portent encore des légendes AZERTY, fiez-vous uniquement aux ergots tactiles
-              <strong>F</strong> et <strong>J</strong> et au clavier visuel à l’écran. Activez ensuite le mode
-              <em>Clavier muet (Aveugle)</em> pour valider vos acquis.
-            </p>
-          </div>
-          <div>
-            <strong>Privilégiez 97 % de précision à la vitesse brute</strong>
-            <p class="lesson-tip">
-              Chaque faute oblige votre cerveau à enregistrer deux gestes contradictoires. Ralentissez légèrement sur vos
-              touches hésitantes : la vitesse montera naturellement au-delà de 60 MPM en quelques jours.
-            </p>
-          </div>
         </div>
-      </article>
+      </div>
     </section>
   </main>
 
-  <footer class="site-footer">
-    Keycraft QWERTY — Entraînement ergonomique local et confidentiel (sauvegarde automatique dans votre navigateur).
+  <footer class="app-footer">
+    Keycraft QWERTY — Progression, étoiles et trophées sauvegardés automatiquement dans votre navigateur.
   </footer>
 
   <script type="module" src="./js/app.js"></script>

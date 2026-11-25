@@ -1,27 +1,35 @@
 /**
- * Persistent LocalStorage State: Preferences, Lesson Mastery, Per-Key Telemetry & Confusions
+ * Keycraft QWERTY V2 — Persistent Gamified Store (XP, 5-Star Stages, Badges, Daily Goal & Heatmap)
  */
 
-const STORAGE_KEY = 'keycraft_qwerty_v1';
+import { BADGES, computeXpReward, getRankInfo } from './data/gamification.js';
+
+const STORAGE_KEY = 'keycraft_qwerty_v2';
 
 const DEFAULT_STATE = {
   prefs: {
     theme: 'light',
     soundProfile: 'thock',
-    layoutVariant: 'us-ansi', // 'us-ansi' | 'us-intl'
+    layoutVariant: 'us-ansi',
     scanCodeEmulation: false,
-    errorMode: 'stop', // 'stop' | 'fluid'
+    errorMode: 'stop',
     showZones: true,
+    showHands: true,
     showAzertyDiff: false,
     blindMode: false,
-    currentLessonId: 'l01',
-    wordsCorpus: 'english',
-    wordsCount: 30,
+    currentStageId: 's01',
   },
-  lessons: {},
+  xp: 0,
+  stages: {},
+  badges: {},
   keyStats: {},
   confusions: {},
   sessions: [],
+  daily: {
+    date: null,
+    timeMs: 0,
+    goalMs: 300000, // 5 minutes/day
+  },
   totals: {
     timeMs: 0,
     charsTyped: 0,
@@ -34,10 +42,12 @@ const DEFAULT_STATE = {
 export class Store {
   constructor() {
     this.state = this.load();
+    this.syncDailyDate();
   }
 
   load() {
     try {
+      if (typeof localStorage === 'undefined') return structuredClone(DEFAULT_STATE);
       const raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) return structuredClone(DEFAULT_STATE);
       const parsed = JSON.parse(raw);
@@ -45,6 +55,7 @@ export class Store {
         ...structuredClone(DEFAULT_STATE),
         ...parsed,
         prefs: { ...DEFAULT_STATE.prefs, ...(parsed.prefs || {}) },
+        daily: { ...DEFAULT_STATE.daily, ...(parsed.daily || {}) },
         totals: { ...DEFAULT_STATE.totals, ...(parsed.totals || {}) },
       };
     } catch {
@@ -54,15 +65,39 @@ export class Store {
 
   save() {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(this.state));
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(this.state));
+      }
     } catch {
-      // Ignore quota errors in restricted storage contexts
+      // Ignore storage quota errors
+    }
+  }
+
+  syncDailyDate() {
+    const today = new Date().toISOString().slice(0, 10);
+    if (this.state.daily.date !== today) {
+      this.state.daily.date = today;
+      this.state.daily.timeMs = 0;
     }
   }
 
   updatePref(key, value) {
     this.state.prefs[key] = value;
     this.save();
+  }
+
+  getTotalStars() {
+    return Object.values(this.state.stages).reduce((sum, s) => sum + (s.stars || 0), 0);
+  }
+
+  getRecommendedStage(allStages) {
+    for (const stage of allStages) {
+      const rec = this.state.stages[stage.id];
+      if (!rec || rec.stars < 3) {
+        return stage;
+      }
+    }
+    return allStages[allStages.length - 1];
   }
 
   recordKeystroke(expectedChar, typedChar, isCorrect, latencyMs) {
@@ -87,13 +122,30 @@ export class Store {
     }
   }
 
-  recordSession({ mode, label, lessonId, targetWpm, wpm, accuracy, durationMs, charsTyped }) {
+  recordOutcome({
+    label,
+    stageId = null,
+    stars = 3,
+    wpm = 0,
+    accuracy = 100,
+    durationMs = 0,
+    charsTyped = 0,
+    maxCombo = 0,
+    isBoss = false,
+    blindMode = false,
+    arcadeWin = false,
+  }) {
+    this.syncDailyDate();
+    const prevRank = getRankInfo(this.state.xp);
+
     const today = new Date().toISOString().slice(0, 10);
-    const { totals } = this.state;
+    const { totals, daily } = this.state;
 
     totals.timeMs += durationMs;
+    daily.timeMs += durationMs;
     totals.charsTyped += charsTyped;
-    if (accuracy >= 90 && wpm > totals.bestWpm) {
+
+    if (accuracy >= 92 && wpm > totals.bestWpm) {
       totals.bestWpm = wpm;
     }
 
@@ -109,52 +161,101 @@ export class Store {
       totals.lastDay = today;
     }
 
-    let stars = 0;
-    if (lessonId) {
-      const goal = targetWpm || 25;
-      if (accuracy >= 98 && wpm >= goal + 6) stars = 3;
-      else if (accuracy >= 94 && wpm >= goal * 0.85) stars = 2;
-      else if (accuracy >= 86) stars = 1;
-
-      const prevLesson = this.state.lessons[lessonId] || {
-        stars: 0,
-        bestWpm: 0,
-        bestAccuracy: 0,
-        attempts: 0,
-      };
-
-      this.state.lessons[lessonId] = {
-        stars: Math.max(prevLesson.stars, stars),
-        bestWpm: Math.max(prevLesson.bestWpm, wpm),
-        bestAccuracy: Math.max(prevLesson.bestAccuracy, accuracy),
-        attempts: prevLesson.attempts + 1,
+    let isFirstClear = false;
+    if (stageId) {
+      const prevStage = this.state.stages[stageId];
+      isFirstClear = !prevStage;
+      this.state.stages[stageId] = {
+        stars: Math.max(prevStage?.stars || 0, stars),
+        bestWpm: Math.max(prevStage?.bestWpm || 0, wpm),
+        bestAcc: Math.max(prevStage?.bestAcc || 0, accuracy),
+        attempts: (prevStage?.attempts || 0) + 1,
       };
     }
+
+    const xpReward = computeXpReward({
+      stars,
+      accuracy,
+      maxCombo,
+      isBoss,
+      isFirstClear,
+    });
+    this.state.xp += xpReward.total;
+    const newRank = getRankInfo(this.state.xp);
+    const leveledUp = newRank.level > prevRank.level;
 
     this.state.sessions.unshift({
       date: new Date().toISOString(),
-      mode,
       label,
       wpm,
       accuracy,
-      durationMs,
+      stars,
     });
-    if (this.state.sessions.length > 40) {
-      this.state.sessions.length = 40;
+    if (this.state.sessions.length > 35) {
+      this.state.sessions.length = 35;
+    }
+
+    // Evaluate newly unlocked Badges
+    const ctx = { accuracy, charsTyped, maxCombo, stars, blindMode, arcadeWin };
+    const newlyUnlockedBadges = [];
+    for (const badge of BADGES) {
+      if (!this.state.badges[badge.id] && badge.check(this.state, ctx)) {
+        this.state.badges[badge.id] = Date.now();
+        newlyUnlockedBadges.push(badge);
+      }
     }
 
     this.save();
-    return stars;
+    return {
+      xpReward,
+      leveledUp,
+      newRank,
+      newlyUnlockedBadges,
+    };
+  }
+
+  /**
+   * Placement Diagnostic: unlocks & grants 3 stars on earlier worlds matching tested speed
+   */
+  applyPlacementResult(wpm, accuracy, allStages) {
+    if (accuracy < 82) return 0;
+    let maxWorldToValidate = 0;
+    if (wpm >= 48 && accuracy >= 94) maxWorldToValidate = 4;
+    else if (wpm >= 35 && accuracy >= 92) maxWorldToValidate = 3;
+    else if (wpm >= 25 && accuracy >= 90) maxWorldToValidate = 2;
+    else if (wpm >= 18) maxWorldToValidate = 1;
+
+    let count = 0;
+    for (const st of allStages) {
+      if (st.worldNumber <= maxWorldToValidate) {
+        const prev = this.state.stages[st.id];
+        if (!prev || prev.stars < 3) {
+          this.state.stages[st.id] = {
+            stars: 3,
+            bestWpm: Math.max(prev?.bestWpm || 0, wpm),
+            bestAcc: Math.max(prev?.bestAcc || 0, accuracy),
+            attempts: (prev?.attempts || 0) + 1,
+          };
+          count += 1;
+        }
+      }
+    }
+    if (count > 0) {
+      this.state.xp += count * 25;
+      const nextRec = this.getRecommendedStage(allStages);
+      this.state.prefs.currentStageId = nextRec.id;
+      this.save();
+    }
+    return count;
   }
 
   getWeakestKeys(limit = 5) {
-    const entries = Object.entries(this.state.keyStats)
+    return Object.entries(this.state.keyStats)
       .filter(([, s]) => s.hits + s.errors >= 4)
       .map(([char, s]) => {
         const total = s.hits + s.errors;
         const errorRate = s.errors / total;
-        const avgMs = s.samples > 0 ? s.totalMs / s.samples : 260;
-        // Weighted weakness score combining error rate and hesitation latency
+        const avgMs = s.samples > 0 ? s.totalMs / s.samples : 250;
         const score = errorRate * 100 + Math.max(0, (avgMs - 190) / 14);
         return {
           char,
@@ -165,10 +266,9 @@ export class Store {
           score,
         };
       })
-      .filter((item) => item.score > 3.5)
-      .sort((a, b) => b.score - a.score);
-
-    return entries.slice(0, limit);
+      .filter((x) => x.score > 3)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, limit);
   }
 
   getTopConfusions(limit = 6) {
@@ -181,12 +281,11 @@ export class Store {
       });
   }
 
-  resetStats() {
-    this.state.lessons = {};
-    this.state.keyStats = {};
-    this.state.confusions = {};
-    this.state.sessions = [];
-    this.state.totals = structuredClone(DEFAULT_STATE.totals);
+  resetAll() {
+    const theme = this.state.prefs.theme;
+    this.state = structuredClone(DEFAULT_STATE);
+    this.state.prefs.theme = theme;
+    this.syncDailyDate();
     this.save();
   }
 }
