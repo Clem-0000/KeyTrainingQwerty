@@ -6,12 +6,27 @@ Un petit trainer de dactylo pour **clavier QWERTY**, pensé pour fonctionner **s
 
 Aucune installation, aucun build :
 
-- **Méthode 1 (la plus simple)** : ouvrir directement `index.html` dans ton navigateur (double-clic, fonctionne en `file://`).
+- **Méthode 1 (la plus simple, 100 % hors-ligne)** : ouvrir directement `index.html` dans ton navigateur (double-clic, fonctionne en `file://`).
 - **Méthode 2** : servir le dossier en local, par exemple :
   ```bash
   python3 -m http.server 8000
   # puis ouvrir http://localhost:8000
   ```
+
+## 🌐 Version en ligne (GitHub Pages)
+
+Le dépôt étant public, l'application peut être servie gratuitement par **GitHub Pages** :
+
+1. Aller dans **Settings → Pages** du dépôt.
+2. « Build and deployment » → Source : **Deploy from a branch**.
+3. Branche : `vibe/keytrain-offline-cae9ad` (ou `main` après fusion de la PR), dossier : `/ (root)` → **Save**.
+
+L'application est alors disponible à l'adresse :
+
+👉 **https://clem-0000.github.io/KeyTrainingQwerty/**
+
+(Toutes les ressources sont en chemins relatifs, donc le site fonctionne aussi sous ce sous-chemin. Le déploiement prend ~1 minute après chaque push sur la branche source.)
+
 
 ## 🎯 Fonctionnalités
 
