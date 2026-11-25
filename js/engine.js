@@ -1,14 +1,15 @@
 /**
- * Precision Typing Engine & Adaptive Weakness Drill Generator
+ * Keycraft QWERTY V2 — Precision Typing Engine (Combos, Timed Sprints & Speed Timeline)
  */
 
 import { WORD_CORPORA, QUOTES_CORPUS, CODE_SNIPPETS } from './data/curriculum.js';
 
 export class TypingEngine {
-  constructor({ onUpdate, onComplete, onKeyResult }) {
+  constructor({ onUpdate, onComplete, onKeyResult, onComboMilestone }) {
     this.onUpdate = onUpdate;
     this.onComplete = onComplete;
     this.onKeyResult = onKeyResult;
+    this.onComboMilestone = onComboMilestone;
 
     this.text = '';
     this.meta = {};
@@ -17,6 +18,7 @@ export class TypingEngine {
     this.cursor = 0;
     this.blockedOnCurrent = false;
 
+    this.durationLimitMs = 0; // 0 = finish when text ends; >0 = timed sprint
     this.startTime = null;
     this.lastStrokeTime = null;
     this.endTime = null;
@@ -24,6 +26,10 @@ export class TypingEngine {
 
     this.totalKeystrokes = 0;
     this.correctKeystrokes = 0;
+    this.combo = 0;
+    this.maxCombo = 0;
+    this.timeline = [];
+    this.lastTimelineSec = 0;
     this.sessionWeakCounts = {};
     this.isFinished = false;
   }
@@ -33,6 +39,8 @@ export class TypingEngine {
     const clean = (text || '').replace(/\r\n/g, '\n').trim();
     this.text = clean.length > 0 ? clean : 'asdf jkl;';
     this.meta = meta;
+    this.durationLimitMs = meta.durationLimitMs || 0;
+
     this.states = new Array(this.text.length).fill('pending');
     this.hadError = new Array(this.text.length).fill(false);
     this.cursor = 0;
@@ -41,21 +49,36 @@ export class TypingEngine {
     this.startTime = null;
     this.lastStrokeTime = null;
     this.endTime = null;
+
     this.totalKeystrokes = 0;
     this.correctKeystrokes = 0;
+    this.combo = 0;
+    this.maxCombo = 0;
+    this.timeline = [];
+    this.lastTimelineSec = 0;
     this.sessionWeakCounts = {};
     this.isFinished = false;
 
-    this.onUpdate?.();
+    this.onUpdate?.(false);
   }
 
   startTimer() {
     if (this.timerId) return;
     this.timerId = globalThis.setInterval(() => {
-      if (!this.isFinished && this.startTime) {
-        this.onUpdate?.(true);
+      if (this.isFinished || !this.startTime) return;
+      const elapsed = performance.now() - this.startTime;
+      const wholeSec = Math.floor(elapsed / 1000);
+      if (wholeSec > this.lastTimelineSec) {
+        this.lastTimelineSec = wholeSec;
+        const m = this.getMetrics();
+        this.timeline.push({ sec: wholeSec, wpm: m.wpm });
       }
-    }, 200);
+      if (this.durationLimitMs > 0 && elapsed >= this.durationLimitMs) {
+        this.finish();
+        return;
+      }
+      this.onUpdate?.(true);
+    }, 150);
   }
 
   stopTimer() {
@@ -75,7 +98,7 @@ export class TypingEngine {
     if (errorMode === 'stop') {
       if (this.blockedOnCurrent) {
         this.blockedOnCurrent = false;
-        this.onUpdate?.();
+        this.onUpdate?.(false);
       }
       return;
     }
@@ -83,7 +106,7 @@ export class TypingEngine {
       this.cursor -= 1;
       this.states[this.cursor] = 'pending';
       this.blockedOnCurrent = false;
-      this.onUpdate?.();
+      this.onUpdate?.(false);
     }
   }
 
@@ -106,8 +129,17 @@ export class TypingEngine {
     this.totalKeystrokes += 1;
     if (isMatch) {
       this.correctKeystrokes += 1;
-    } else if (expected !== ' ' && expected !== '\n') {
-      this.sessionWeakCounts[expected] = (this.sessionWeakCounts[expected] || 0) + 1;
+      this.combo += 1;
+      if (this.combo > this.maxCombo) this.maxCombo = this.combo;
+      if ([15, 30, 50, 75, 100].includes(this.combo)) {
+        const tier = [15, 30, 50, 75, 100].indexOf(this.combo) + 1;
+        this.onComboMilestone?.(this.combo, tier);
+      }
+    } else {
+      this.combo = 0;
+      if (expected !== ' ' && expected !== '\n') {
+        this.sessionWeakCounts[expected] = (this.sessionWeakCounts[expected] || 0) + 1;
+      }
     }
 
     this.onKeyResult?.({
@@ -119,7 +151,7 @@ export class TypingEngine {
 
     if (errorMode === 'stop') {
       if (isMatch) {
-        this.states[this.cursor] = this.hadError[this.cursor] ? 'corrected' : 'correct';
+        this.states[this.cursor] = this.hadError[this.cursor] ? 'fixed' : 'ok';
         this.blockedOnCurrent = false;
         this.advanceCursorAfterMatch(expected);
       } else {
@@ -127,13 +159,12 @@ export class TypingEngine {
         this.blockedOnCurrent = true;
       }
     } else {
-      // Fluid mode
       if (isMatch) {
-        this.states[this.cursor] = this.hadError[this.cursor] ? 'corrected' : 'correct';
+        this.states[this.cursor] = this.hadError[this.cursor] ? 'fixed' : 'ok';
         this.advanceCursorAfterMatch(expected);
       } else {
         this.hadError[this.cursor] = true;
-        this.states[this.cursor] = 'wrong';
+        this.states[this.cursor] = 'err';
         this.cursor += 1;
       }
     }
@@ -141,53 +172,69 @@ export class TypingEngine {
     if (this.cursor >= this.text.length) {
       this.finish();
     } else {
-      this.onUpdate?.();
+      this.onUpdate?.(false);
     }
   }
 
   advanceCursorAfterMatch(matchedChar) {
     this.cursor += 1;
-    // In multi-line code snippets, auto-advance leading indentation spaces after Enter
     if (matchedChar === '\n' && this.meta.isCode) {
       while (this.cursor < this.text.length && this.text[this.cursor] === ' ') {
-        this.states[this.cursor] = 'correct';
+        this.states[this.cursor] = 'ok';
         this.cursor += 1;
       }
     }
   }
 
   finish() {
+    if (this.isFinished) return;
     this.isFinished = true;
     this.endTime = performance.now();
     this.stopTimer();
-    this.onUpdate?.();
-    this.onComplete?.(this.getMetrics());
+    const finalMetrics = this.getMetrics();
+    this.timeline.push({
+      sec: Math.max(1, Math.round(finalMetrics.elapsedMs / 1000)),
+      wpm: finalMetrics.wpm,
+    });
+    this.onUpdate?.(false);
+    this.onComplete?.(finalMetrics);
   }
 
   getMetrics() {
     const now = this.endTime || (this.startTime ? performance.now() : 0);
-    const elapsedMs = this.startTime ? Math.max(250, now - this.startTime) : 0;
+    const rawElapsed = this.startTime ? Math.max(250, now - this.startTime) : 0;
+    const elapsedMs =
+      this.durationLimitMs > 0 ? Math.min(this.durationLimitMs, rawElapsed) : rawElapsed;
     const minutes = elapsedMs / 60000;
 
     let validChars = 0;
     for (let i = 0; i < this.cursor; i++) {
-      if (this.states[i] === 'correct' || this.states[i] === 'corrected') {
+      if (this.states[i] === 'ok' || this.states[i] === 'fixed') {
         validChars += 1;
       }
     }
 
-    const wpm =
-      elapsedMs >= 900 && validChars >= 2 ? Math.round(validChars / 5 / minutes) : 0;
+    const wpm = elapsedMs >= 800 && validChars >= 2 ? Math.round(validChars / 5 / minutes) : 0;
     const rawWpm =
-      elapsedMs >= 900 && this.totalKeystrokes >= 2
+      elapsedMs >= 800 && this.totalKeystrokes >= 2
         ? Math.round(this.totalKeystrokes / 5 / minutes)
         : 0;
     const accuracy =
       this.totalKeystrokes > 0
         ? Math.round((this.correctKeystrokes / this.totalKeystrokes) * 100)
         : 100;
+
     const progress =
-      this.text.length > 0 ? Math.round((this.cursor / this.text.length) * 100) : 0;
+      this.durationLimitMs > 0
+        ? Math.min(100, Math.round((elapsedMs / this.durationLimitMs) * 100))
+        : this.text.length > 0
+          ? Math.round((this.cursor / this.text.length) * 100)
+          : 0;
+
+    const remainingSec =
+      this.durationLimitMs > 0
+        ? Math.max(0, Math.ceil((this.durationLimitMs - elapsedMs) / 1000))
+        : null;
 
     const sessionWeakList = Object.entries(this.sessionWeakCounts)
       .sort((a, b) => b[1] - a[1])
@@ -199,25 +246,32 @@ export class TypingEngine {
       rawWpm,
       accuracy,
       progress,
+      remainingSec,
       elapsedMs,
       charsTyped: validChars,
+      combo: this.combo,
+      maxCombo: this.maxCombo,
+      timeline: this.timeline,
       sessionWeakList,
     };
   }
 }
 
-/**
- * Generates randomized fluent word sequences, quotes, code snippets, or adaptive weakness drills.
- */
-export function buildPracticePrompt({ mode, corpus = 'english', wordCount = 30, weakKeys = [] }) {
+export function buildPracticePrompt({
+  mode,
+  corpus = 'english',
+  durationSec = 0,
+  weakKeys = [],
+}) {
   if (mode === 'quotes') {
     const quote = QUOTES_CORPUS[Math.floor(Math.random() * QUOTES_CORPUS.length)];
     return {
       text: quote,
       title: 'Citation fluide',
-      kicker: 'Cadence & Ponctuation',
-      tip: 'Gardez une respiration calme et anticipez le mot suivant du regard.',
+      sub: 'Cadence & Ponctuation naturelle',
+      targetWpm: 32,
       isCode: false,
+      durationLimitMs: 0,
     };
   }
 
@@ -225,26 +279,25 @@ export function buildPracticePrompt({ mode, corpus = 'english', wordCount = 30, 
     const item = CODE_SNIPPETS[Math.floor(Math.random() * CODE_SNIPPETS.length)];
     return {
       text: item.code,
-      title: `Extrait ${item.lang}`,
-      kicker: 'Code & Symboles QWERTY',
-      tip: 'Utilisez Enter ↵ en fin de ligne : l’indentation suivante est automatique.',
+      title: `Code ${item.lang}`,
+      sub: 'Symboles & Syntaxe développeur',
+      targetWpm: 26,
       isCode: true,
+      durationLimitMs: 0,
     };
   }
 
   if (mode === 'adaptive') {
     if (!weakKeys || weakKeys.length === 0) {
-      // Calibration drill testing key QWERTY & AZERTY-diff positions
-      const cal = sampleWords(WORD_CORPORA.azerty_traps, 22);
       return {
-        text: cal.join(' '),
-        title: 'Calibrage diagnostique QWERTY',
-        kicker: 'Drill Intelligent',
-        tip: 'Tapez quelques lignes pour que le moteur identifie vos touches les plus hésitantes.',
+        text: sampleWords(WORD_CORPORA.azerty_traps, 24).join(' '),
+        title: 'Drill Intelligent · Diagnostic',
+        sub: 'Tapez cette série pour détecter vos touches les plus hésitantes',
+        targetWpm: 26,
         isCode: false,
+        durationLimitMs: 0,
       };
     }
-
     const targets = weakKeys.map((w) => w.char);
     const pool = [
       ...WORD_CORPORA.english,
@@ -252,64 +305,54 @@ export function buildPracticePrompt({ mode, corpus = 'english', wordCount = 30, 
       ...WORD_CORPORA.azerty_traps,
     ];
     const matching = pool.filter((w) => targets.some((t) => w.toLowerCase().includes(t)));
-    const chosen = [];
-    const source = matching.length >= 6 ? matching : pool;
-
-    for (let i = 0; i < 24; i++) {
-      let word = source[Math.floor(Math.random() * source.length)];
-      // If a punctuation/symbol is among weak keys, weave it naturally
-      const punctTargets = targets.filter((t) => !/[a-z0-9]/i.test(t));
-      if (punctTargets.length > 0 && i % 3 === 1) {
-        const p = punctTargets[i % punctTargets.length];
-        if ([';', ',', '.', '?', '!'].includes(p)) word = `${word}${p}`;
-        else if (p === '[') word = `[${word}]`;
-        else if (p === '{') word = `{${word}}`;
-        else if (p === '(') word = `(${word})`;
-      }
-      chosen.push(word);
-    }
-
+    const src = matching.length >= 5 ? matching : pool;
+    const words = sampleWords(src, 25);
     return {
-      text: chosen.join(' '),
-      title: `Ciblage : ${targets.map((t) => t.toUpperCase()).join(' · ')}`,
-      kicker: 'Drill Adaptatif Personnalisé',
-      tip: 'Séance générée sur mesure à partir de vos erreurs et temps de réaction récents.',
+      text: words.join(' '),
+      title: `Drill Adaptatif · [ ${targets.map((t) => t.toUpperCase()).join(' · ')} ]`,
+      sub: 'Généré sur mesure à partir de vos erreurs et temps de réaction',
+      targetWpm: 28,
       isCode: false,
+      durationLimitMs: 0,
     };
   }
 
-  // Default: 'words' mode
+  // Timed Sprint or Word flow
   const list = WORD_CORPORA[corpus] || WORD_CORPORA.english;
-  const words = sampleWords(list, wordCount);
+  const wordCount = durationSec > 0 ? Math.max(70, durationSec * 3) : 28;
   const labels = {
     english: 'Anglais fréquent',
-    french_ascii: 'Français fluide (sans accents)',
-    french_accents: 'Français accentué (US-International)',
-    azerty_traps: 'Spécial pièges AZERTY → QWERTY',
+    french_ascii: 'Français fluide',
+    french_accents: 'Français US-International',
+    azerty_traps: 'Spécial pièges AZERTY',
   };
 
   return {
-    text: words.join(' '),
-    title: `${labels[corpus] || 'Mots'} — ${wordCount} mots`,
-    kicker: 'Fluidité & Endurance',
-    tip:
-      corpus === 'french_accents'
-        ? "Mode US-International : utilisez ' + e pour é, ` + e pour è, ^ + e pour ê, ' + c pour ç."
-        : 'Ne cherchez pas la vitesse maximale : visez 97 %+ de précision sans regarder vos mains.',
+    text: sampleWords(list, wordCount).join(' '),
+    title:
+      durationSec > 0
+        ? `Chrono ${durationSec}s · ${labels[corpus] || 'Mots'}`
+        : `${labels[corpus] || 'Mots'} · 28 mots`,
+    sub:
+      durationSec > 0
+        ? `Tapez le maximum de mots justes en ${durationSec} secondes !`
+        : 'Fluidité régulière sans quitter l’écran des yeux',
+    targetWpm: 32,
     isCode: false,
+    durationLimitMs: durationSec > 0 ? durationSec * 1000 : 0,
   };
 }
 
 function sampleWords(list, count) {
-  const result = [];
+  const out = [];
   let prev = '';
   for (let i = 0; i < count; i++) {
     let pick = list[Math.floor(Math.random() * list.length)];
     if (pick === prev && list.length > 1) {
       pick = list[(list.indexOf(pick) + 1) % list.length];
     }
-    result.push(pick);
+    out.push(pick);
     prev = pick;
   }
-  return result;
+  return out;
 }
