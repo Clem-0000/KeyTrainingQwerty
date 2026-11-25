@@ -1,7 +1,9 @@
-/* ================= QwertyLab — tout-en-un, 0 dépendance ================= */
+/* ================= QwertyLab v2 — parcours gamifié façon TypingClub ================= */
 "use strict";
 
-/* ---------- définition du clavier QWERTY ---------- */
+/* ============================================================
+   1. CLAVIER QWERTY — layout + doigt responsable de chaque touche
+   ============================================================ */
 const ROWS = [
   [["`"],["1"],["2"],["3"],["4"],["5"],["6"],["7"],["8"],["9"],["0"],["-"],["="]],
   [["q"],["w"],["e"],["r"],["t"],["y"],["u"],["i"],["o"],["p"],["["],["]"]],
@@ -9,365 +11,545 @@ const ROWS = [
   [["z"],["x"],["c"],["v"],["b"],["n"],["m"],[","],["."],["/"]],
   [["SPACE","wide space"]],
 ];
-const KEY_FINGER = {
-  "`":"lpinky","1":"lpinky","2":"lring","3":"lmid","4":"lindex","5":"lindex",
-  "6":"rindex","7":"rindex","8":"rmid","9":"rring","0":"rpinky","-":"rpinky","=":"rpinky",
-  "q":"lpinky","w":"lring","e":"lmid","r":"lindex","t":"lindex",
-  "y":"rindex","u":"rindex","i":"rmid","o":"rring","p":"rpinky","[":"rpinky","]":"rpinky",
-  "a":"lpinky","s":"lring","d":"lmid","f":"lindex","g":"lindex",
-  "h":"rindex","j":"rindex","k":"rmid","l":"rring",";":"rpinky","'":"rpinky",
-  "z":"lpinky","x":"lring","c":"lmid","v":"lindex","b":"lindex",
-  "n":"rindex","m":"rindex",",":"rmid",".":"rring","/":"rpinky",
-  "SPACE":"lthumb", " ":"lthumb",
+const FINGER = {
+  "`":"l-pinky","1":"l-pinky","2":"l-ring","3":"l-mid","4":"l-index","5":"l-index",
+  "6":"r-index","7":"r-index","8":"r-mid","9":"r-ring","0":"r-pinky","-":"r-pinky","=":"r-pinky",
+  "q":"l-pinky","w":"l-ring","e":"l-mid","r":"l-index","t":"l-index",
+  "y":"r-index","u":"r-index","i":"r-mid","o":"r-ring","p":"r-pinky","[":"r-pinky","]":"r-pinky",
+  "a":"l-pinky","s":"l-ring","d":"l-mid","f":"l-index","g":"l-index",
+  "h":"r-index","j":"r-index","k":"r-mid","l":"r-ring",";":"r-pinky","'":"r-pinky",
+  "z":"l-pinky","x":"l-ring","c":"l-mid","v":"l-index","b":"l-index",
+  "n":"r-index","m":"r-index",",":"r-mid",".":"r-ring","/":"r-pinky",
+  " ":"l-thumb",
 };
-const FINGER_KEY = {};
-for (const k in KEY_FINGER){ const f = KEY_FINGER[k]; (FINGER_KEY[f] ??= []).push(k); }
 
-/* ---------- leçons (progressives, doigt par doigt) ---------- */
-const rand = a => a[Math.floor(Math.random()*a.length)];
-function rep(pool,n){ return Array.from({length:n},()=>rand(pool)).join(" "); }
+/* ============================================================
+   2. CURSUS — 8 unités, du doigt par doigt jusqu'aux phrases
+   ============================================================ */
+const rand = a => a[Math.floor(Math.random() * a.length)];
+const shuffled = a => { const b=[...a]; for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]];} return b; };
 
-const LESSONS = [
-  { title:"Rangée de base", lvl:"1 · Ancrage", desc:"asdf jkl; — retrouve tes points d'ancrage F et J sans regarder.",
-    gen:()=>rep(["asdf","jjj","fff","jkl","asdf","jkl;","ffjj","dkss","aa",";;","fj","fj","dk"],10) },
-  { title:"Index gérés", lvl:"2 · Index", desc:"F/G pour l'index gauche, J/H pour le droit, tout en restant ancré.",
-    gen:()=>rep(["gf","hj","fg","jh","gg","hh","gfjh","fjgh","gfhj"],10) },
-  { title:"Majeurs & annulaires", lvl:"3 · Doigts faibles", desc:"D/K puis S/L — les doigts les plus lents. Prends ton temps.",
-    gen:()=>rep(["dd","kk","ss","ll","sk","dl","dk","ls","dksl","sldk"],10) },
-  { title:"Auriculaires", lvl:"4 · Auriculaires", desc:"A et ; — les oubliés du clavier. Renforce-les maintenant.",
-    gen:()=>rep(["aa",";;","aj","a;","a;s","sla","a;l",";a"],10) },
-  { title:"Rangée du haut", lvl:"5 · Extension", desc:"QWERT YUIOP — étire sans bouger la paume.",
-    gen:()=>rep(["qq","pp","we","rt","yu","io","qwerty","poiuy","tre","uyo"],10) },
-  { title:"> & <", lvl:"6 · Majuscules", desc:"Virgule et point avec les majeurs/annulaires droits.",
-    gen:()=>rep(["..",",,","a,b.","n,m","b.c","..,,","a,z."],10) },
-  { title:"Rangée du bas", lvl:"7 · Le grand saut", desc:"ZXCV BNM — contrôle ton retour à la base.",
-    gen:()=>rep(["zz","xx","cv","bn","zxc","vbn","zxcvbnm","mm","nn"],10) },
-  { title:"Nombres", lvl:"8 · Chiffres", desc:"12345 67890 — les deux index se partagent le milieu.",
-    gen:()=>rep(["11","22","33","44","55","66","77","88","99","00","12","98","45","67"],10) },
-  { title:"Mots courts", lvl:"9 · Vocabulaire", desc:"Mots de 3 lettres : rythme et régularité.",
-    gen:()=>Array.from({length:14},()=>rand(["le","un","de","et","il","ou","en","ce","que","pas","sur","les","est","pour","dans","que"])).join(" ") },
-  { title:"Mots courants", lvl:"10 · Vitesse", desc:"Les mots les plus fréquents de l'anglais.",
-    gen:()=>Array.from({length:14},()=>rand(["the","and","you","that","have","for","not","are","with","this","but","his","from","they","one","all"])).join(" ") },
-  { title:"Phrases", desc:"Texte continu : garde tes mains posées, respire, et ne baisse pas le rythme.",
-    lvl:"11 · Terrain réel",
-    gen:()=>rand([
-      "the quick brown fox jumps over the lazy dog while typing at full speed",
-      "practice makes perfect so keep your fingers on the home row and relax",
-      "speed comes from accuracy first so type each letter with intent",
-      "your hands should float over the keys like a pianist playing softly",
-    ]),
-  },
+function letterDrill(keys, extra = []){
+  const pool = [...keys, ...extra.flatMap(k=>[k,k])];
+  const groups = [];
+  let total = 0;
+  while(total < 110){
+    const n = 3 + Math.floor(Math.random()*2);
+    const g = Array.from({length:n},()=>rand(pool)).join("");
+    groups.push(g); total += n + 1;
+  }
+  return groups.join(" ");
+}
+
+const WORDS_FR = "le la de un une et il elle ou en ce que qui pas sur les est pour dans plus mais comme avec tout son ses notre leur leur bien tres jour vie main temps monde coeur enfant ami ami".split(" ");
+const WORDS_EN = "the and you that have for not are with this but from they one all when your can said there use each which she will people much before right through where work life year back give most very".split(" ");
+
+const SENTENCES = [
+  "Le chat dort sur le tapis pres de la fenetre.",
+  "Il fait beau aujourd hui, allons marcher dehors.",
+  "La pratique rend parfait, alors entraine toi chaque jour.",
+  "Un bon typiste garde toujours ses mains bien posees.",
+  "Speed comes from accuracy, so type each key with intent.",
+  "The quick brown fox jumps over the lazy dog.",
+  "Keep your fingers on the home row and stay relaxed.",
+  "Un petit pas par jour mene a une grande victoire.",
+  "Les doigts bien places font des mots rapides et justes.",
+  "Respire, garde le rythme, et laisse tes mains voler.",
 ];
+
+const CURRICULUM = [
+  { title:"La rangée de base", desc:"Pose tes index sur F et J. C'est ton camp de base.",
+    lessons:[
+      { id:"u1l1", title:"F et J", keys:["f","j"], goal:18,
+        tip:"Tes deux index touchent les petites bosses de F et J. Après chaque touche, ils reviennent à la maison." },
+      { id:"u1l2", title:"D et K", keys:["d","k"], goal:18,
+        tip:"Les majeurs partent de D et K. Un petit mouvement vers le haut, puis retour immédiat." },
+      { id:"u1l3", title:"S et L", keys:["s","l"], goal:18,
+        tip:"Les annulaires sont les doigts les plus faibles. Ralentis volontairement pour les muscler." },
+      { id:"u1l4", title:"A et ;", keys:["a",";"], goal:18,
+        tip:"Les auriculaires gèrent A et le point-virgule. Ils mercent… pardon, méritent ton amour." },
+      { id:"u1l5", title:"Révision : ASDF JKL;", review:["f","j","d","k","s","l","a",";"], goal:20,
+        tip:"Toute la rangée de base ! Ne regarde ni tes mains ni le clavier : sens les bosses." },
+    ]},
+  { title:"La rangée du haut", desc:"QWERT au-dessus de la main gauche, YUIOP à droite.",
+    lessons:[
+      { id:"u2l1", title:"Q et P", keys:["q","p"], goal:18, tip:"Les auriculaires montent d'un cran. La paume ne bouge pas !" },
+      { id:"u2l2", title:"W et O", keys:["w","o"], goal:18, tip:"Les annulaires s'étirent vers le haut. Retour immédiat à la base." },
+      { id:"u2l3", title:"E et I", keys:["e","i"], goal:18, tip:"Les majeurs aiment l'aventure : E et I sont leurs touches préférées." },
+      { id:"u2l4", title:"R, T, U, Y", keys:["r","t","u","y"], goal:20, tip:"Les index couvrent 4 touches chacun. C'est leur super-pouvoir." },
+      { id:"u2l5", title:"Révision : QWERTY UIOP", review:["q","w","e","r","t","y","u","i","o","p"], goal:22,
+        tip:"Rangée du haut complète. Garde le poignet flottant, l'avant-bras fait le travail." },
+    ]},
+  { title:"La rangée du bas", desc:"Les touches les plus lointaines : contrôlera ton retour à la base.",
+    lessons:[
+      { id:"u3l1", title:"Z et /", keys:["z","/"], goal:16, tip:"Les auriculaires descendent tout en bas. Le voyage le plus long du clavier." },
+      { id:"u3l2", title:"X et .", keys:["x","."], goal:16, tip:"Les annulaires descendent d'un cran. Le point terminera bientôt tes phrases." },
+      { id:"u3l3", title:"C et ,", keys:["c",","], goal:16, tip:"Majeur gauche sur C, majeur droit sur la virgule. Même mouvement, miroir." },
+      { id:"u3l4", title:"V et N", keys:["v","n"], goal:18, tip:"Les index descendent d'un cran. Ne déplace jamais la main entière : seul le doigt part en mission." },
+      { id:"u3l5", title:"B, puis révision", keys:["b"], review:["z","x","c","v","b","n","m",",",".","/"], goal:22,
+        tip:"B est le grand écart de l'index gauche. Ensuite, toute la rangée du bas en révision !" },
+    ]},
+  { title:"Symboles courants", desc:"Les touches discretes qui donnent du sens à un texte.",
+    lessons:[
+      { id:"u4l1", title:"Le tiret -", keys:["-"], goal:16, tip:"L'auriculaire droit, juste à côté du 0. Un petit saut, un retour." },
+      { id:"u4l2", title:"Crochets [ ]", keys:["[","]"], goal:16, tip:"Encore l'auriculaire droit. Ces deux-là s'appellent « les oubliés »." },
+      { id:"u4l3", title:"L'apostrophe '", keys:["'"], goal:16, tip:"L'auriculaire droit encore. Il va devenir ta touche la plus musclée." },
+      { id:"u4l4", title:"Révision symboles", review:["-","=","[","]",";","'","/",","], goal:20,
+        tip:"Tous les symboles appris, mélangés. Concentre-toi sur la précision." },
+    ]},
+  { title:"Les chiffres", desc:"5 gauche, 5 droite : les index se partagent le centre.",
+    lessons:[
+      { id:"u5l1", title:"1 à 5", keys:["1","2","3","4","5"], goal:14, tip:"Le pouce ne bouge pas : l'index part de F, monte à 5, l'index droit à 6." },
+      { id:"u5l2", title:"6 à 0", keys:["6","7","8","9","0"], goal:14, tip:"Les index étirent jusqu'à 6 et 7. Les autres doigts restent en base." },
+      { id:"u5l3", title:"Tous les chiffres", review:["1","2","3","4","5","6","7","8","9","0"], goal:16,
+        tip:"Chiffres mélangés. Un comptable rapide est un comptable précis." },
+    ]},
+  { title:"Lettres majuscules", desc:"Maj + la lettre. Les auriculaires appuient sur Maj, tes doigts habituels tapent.",
+    lessons:[
+      { id:"u6l1", title:"Majuscules", caps:true, goal:18,
+        tip:"Maj gauche = auriculaire gauche (pour la main droite) et inversement. Touche maj, puis la lettre normalement." },
+      { id:"u6l2", title:"Noms propres", caps:true, goal:20,
+        tip:"N'écrase pas la touche Maj : un appui léger suffit. Rythme régulier." },
+    ]},
+  { title:"Mots entiers", desc:"Mets tout ensemble : des mots de plus en plus longs.",
+    lessons:[
+      { id:"u7l1", title:"Mots courts", words:WORDS_FR.filter(w=>w.length<=3), goal:22,
+        tip:"Trois à quatre lettres. Cherche le flux, pas la vitesse brute." },
+      { id:"u7l2", title:"Mots courants", words:WORDS_FR.concat(WORDS_EN), goal:25,
+        tip:"Les mots les plus fréquents doivent devenir des réflexes." },
+      { id:"u7l3", title:"Mots rapides", words:WORDS_EN.concat(WORDS_FR), goal:28,
+        tip:"Objectif débit ! Mais précision d'abord : une erreur coûte plus cher qu'une hésitation." },
+    ]},
+  { title:"Phrases", desc:"Le vrai terrain : ponctuation, majuscules, espaces, rythme.",
+    lessons:[
+      { id:"u8l1", title:"Phrases simples", sentences:true, goal:25,
+        tip:"Regarde un mot en avance. Tes yeux guident, tes doigts suivent." },
+      { id:"u8l2", title:"Le grand final", sentences:true, goal:30,
+        tip:"Dernière ligne droite ! Détends tes épaules, respire, et vole." },
+    ]},
+];
+
+// aplatissement du cursus -> liste ordonnée
+const LESSON_LIST = CURRICULUM.flatMap((u,i)=>u.lessons.map(l=>({...l, unit:i, unitTitle:u.title})));
+const UNIT_LESSONS = CURRICULUM.map((u,i)=>u.lessons);
+
 const TIPS = [
-  "Ne regarde pas tes mains. Trouve les bosses sur F et J : ce sont tes points d'ancrage.",
-  "La vitesse vient de la précision. Frappe juste avant de frapper vite.",
-  "Revient toujours en position de base après chaque touche éloignée.",
-  "Garde les poignets flottants, appuyés sur rien. Tes avant-bras font le travail.",
-  "Si tu hésites sur une touche, ralentis volontairement une session entière.",
-  "Respire ! Un typiste tendu tape avec des doigts de bois.",
+  "Ne regarde jamais tes mains. Les bosses de F et J sont ton GPS.",
+  "La précision d'abord : la vitesse vient toute seule ensuite.",
+  "Tape du bout des doigts, comme un pianiste. Pas de doigts plats.",
+  "Après chaque touche éloignée, reviens immédiatement en position de base.",
+  "Épaules basses, poignets flottants : la frappe vient des avant-bras.",
+  "Si tu hésites, ralentis plutôt que de chercher la touche à l'aveugle.",
+  "Un rythme régulier bat toujours des pointes de vitesse irrégulières.",
 ];
 
-const WORDS = ("the of and to in is you that it he was for on are as with his they at be this have from or one had by word but not what all were we when your can said there use an each which she do how their if will up other about out many then them these so some her would make like him into time has look two more write go see number no way could people my than first water been call who oil its now find long down day did get come made may part over new sound take only little work know place year live me back give most very after thing our just name good sentence man think say great where help through much before line right too mean old any same tell boy follow came want show also around form three small set put end does another well large must big even such because").split(" ");
+const BADGES = [
+  { id:"first", em:"🐣", name:"Premiers pas", desc:"Terminer ta première leçon", test:p=>doneCount(p)>=1 },
+  { id:"oneshot", em:"💯", name:"Sans faute", desc:"Terminer une leçon à 100 % de précision", test:p=>p.history.some(h=>h.acc===100) },
+  { id:"flash", em:"⚡", name:"Éclair", desc:"Atteindre 50 WPM sur une leçon", test:p=>p.history.some(h=>h.wpm>=50) },
+  { id:"rooted", em:"🌱", name:"Racine solide", desc:"Unité 1 terminée avec 3★ partout", test:p=>UNIT_LESSONS[0].every(l=>(p.lessons[l.id]?.stars||0)===3) },
+  { id:"star30", em:"✨", name:"Chasseur d'étoiles", desc:"Récolter 30 étoiles au total", test:p=>totalStars(p)>=30 },
+  { id:"half", em:"🧗", name:"À mi-parcours", desc:"Terminer la moitié du parcours", test:p=>doneCount(p)>=Math.ceil(LESSON_LIST.length/2) },
+  { id:"grad", em:"🎓", name:"Diplômé", desc:"Terminer toutes les leçons", test:p=>doneCount(p)>=LESSON_LIST.length },
+  { id:"habit3", em:"📅", name:"Habitude", desc:"3 jours d'entraînement d'affilée", test:p=>p.streak>=3 },
+  { id:"fire7", em:"🔥", name:"Inarrêtable", desc:"7 jours d'entraînement d'affilée", test:p=>p.streak>=7 },
+  { id:"master", em:"👑", name:"Maître du clavier", desc:"3★ sur toutes les leçons", test:p=>LESSON_LIST.every(l=>(p.lessons[l.id]?.stars||0)===3) },
+];
+const doneCount  = p => LESSON_LIST.filter(l=>p.lessons[l.id]?.stars>0).length;
+const totalStars = p => LESSON_LIST.reduce((a,l)=>a+(p.lessons[l.id]?.stars||0),0);
 
-/* ---------- persistence ---------- */
-const LS_KEY = "qwertylab.v1";
-const store = {
-  data: null,
-  load(){ try{ this.data = JSON.parse(localStorage.getItem(LS_KEY)) || null }catch(e){ this.data = null }
-    if(!this.data) this.data = { history:[], lessons:{}, keys:{} }; return this.data; },
-  save(){ try{ localStorage.setItem(LS_KEY, JSON.stringify(this.data)) }catch(e){} },
-  clear(){ this.data = { history:[], lessons:{}, keys:{} }; this.save(); },
+/* ============================================================
+   3. PROFIL — XP, niveau, série, badges, stats (localStorage)
+   ============================================================ */
+const LS = "qwertylab.v2";
+const profile = {
+  xp:0, streak:0, lastDay:null, lessons:{}, badges:[], history:[], keyStats:{}, sound:true,
+  load(){ try{ const d=JSON.parse(localStorage.getItem(LS)); if(d) Object.assign(this,d); }catch(e){} },
+  save(){ try{ localStorage.setItem(LS, JSON.stringify({
+    xp:this.xp, streak:this.streak, lastDay:this.lastDay, lessons:this.lessons,
+    badges:this.badges, history:this.history, keyStats:this.keyStats, sound:this.sound })); }catch(e){} },
 };
+const levelOf = xp => Math.floor(xp/100)+1;
 
-/* ---------- construction du clavier visuel ---------- */
-const kbEl = document.getElementById("keyboard");
+function bumpStreak(){
+  const today = new Date().toISOString().slice(0,10);
+  if(profile.lastDay === today) return;
+  const yest = new Date(Date.now()-864e5).toISOString().slice(0,10);
+  profile.streak = profile.lastDay === yest ? profile.streak+1 : 1;
+  profile.lastDay = today;
+  if(profile.streak>1) toast(`📅 Série de ${profile.streak} jours !`, "gold");
+}
+
+/* ============================================================
+   4. DOM & vues
+   ============================================================ */
+const $ = id => document.getElementById(id);
+const VIEWS = ["map","intro","type","result","stats","badges"];
+function showView(name){
+  VIEWS.forEach(v=>$("view-"+v).classList.toggle("hidden", v!==name));
+  document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active", t.dataset.view===name));
+  if(name==="map") renderMap();
+  if(name==="stats") renderStats();
+  if(name==="badges") renderBadges();
+}
+
+/* ---------- clavier virtuel ---------- */
 const keyEls = {};
-function buildKeyboard(){
-  kbEl.innerHTML = "";
+(function buildKeyboard(){
+  const kb = $("keyboard");
   ROWS.forEach(row=>{
     const r = document.createElement("div"); r.className = "krow";
     row.forEach(([label, cls])=>{
-      const k = document.createElement("div");
       const d = cls && cls.includes("space") ? "SPACE" : label;
-      k.className = `key ${cls||""} ${KEY_FINGER[d]||""} ${"fjh".includes(d)?"homing":""}`;
-      k.textContent = d === "SPACE" ? "" : d;
-      if (d==="SPACE") k.style.textTransform="none";
+      const k = document.createElement("div");
+      k.className = `key ${cls||""} ${FINGER[d]?.replace("-","")||""} ${"fj".includes(d)?"homing":""}`;
+      k.textContent = d==="SPACE" ? "␣" : d;
       keyEls[d] = k; r.appendChild(k);
     });
-    kbEl.appendChild(r);
+    kb.appendChild(r);
   });
+})();
+function clearGuides(){
+  document.querySelectorAll(".key.next,.key.pressed,.key.error").forEach(e=>e.classList.remove("next","pressed","error"));
+  document.querySelectorAll(".finger.active").forEach(e=>e.classList.remove("active"));
+}
+function guide(ch){
+  clearGuides();
+  const base = ch === " " ? "SPACE" : ch.toLowerCase();
+  const kEl = keyEls[base];
+  if(kEl) kEl.classList.add("next");
+  const f = document.querySelector(`.finger[data-finger="${FINGER[base]||""}"]`);
+  if(f) f.classList.add("active");
 }
 
-/* ---------- références DOM ---------- */
-const $ = id => document.getElementById(id);
-const views = { learn:$("view-learn"), session:$("view-session"), wordrush:$("view-wordrush"), stats:$("view-stats") };
-const textEl = $("textDisplay");
-const lessonGrid = $("lessonGrid");
-
-/* ---------- état de session ---------- */
-let S = null; // session courante
-function newSession(type, text, meta){
-  S = {
-    type, meta: meta||{},
-    chars: [...text],
-    idx: 0, errors: 0, totalTyped: 0,
-    startAt: null, endAt: null, finished: false,
-    wrongKeys: {},
-    timerEnd: type === "wordrush" ? Date.now() + (meta.duration*1000) : null,
-  };
-  $("result").classList.add("hidden");
-  $("lessonTitle").textContent = meta?.title || "Entraînement";
-  $("mErr").textContent = "0"; $("mAcc").textContent = "100%"; $("mWpm").textContent="0"; $("mTime").textContent="0:00";
-  renderText();
-  showView("session");
-  textEl.focus();
+/* ---------- génération d'exercice ---------- */
+function genExercise(lesson){
+  if(lesson.sentences) return rand(SENTENCES);
+  if(lesson.words){
+    const pool = lesson.words;
+    return Array.from({length:16},()=>rand(pool)).join(" ");
+  }
+  const base = lesson.keys || [];
+  const rev = lesson.review || [];
+  if(rev.length) return letterDrill(rev);
+  return letterDrill(base);
+}
+function genCapsExercise(){
+  const words = ["Le","Chat","Dort","Sur","Le","Tapis","Un","Chien","Heureux","Vit","Ici","Paris","Est","Beau","La","Maison","Du","Bonheur","Est","Vide"];
+  return Array.from({length:14},()=>rand(words)).join(" ");
 }
 
-function renderText(){
-  textEl.innerHTML = "";
+/* ============================================================
+   5. MOTEUR DE FRAPPE
+   ============================================================ */
+let S = null; // session
+function startLesson(lesson){
+  const text = lesson.caps ? genCapsExercise() : genExercise(lesson);
+  S = { lesson, chars:[...text], idx:0, errors:0, typed:0, startAt:null, over:false, wrong:{} };
+  $("typeCrumb").textContent = `Unité ${lesson.unit+1} · ${lesson.title}`;
+  $("mWpm").textContent="0"; $("mAcc").textContent="100%"; $("mErr").textContent="0"; $("mTime").textContent="0:00";
+  $("pbFill").style.width = "0%";
+  const td = $("textDisplay"); td.innerHTML = "";
   S.chars.forEach((c,i)=>{
     const s = document.createElement("span");
-    s.className = "char" + (i===0 ? " current caret":"");
-    s.textContent = c;
-    textEl.appendChild(s);
+    s.className = "char" + (i===0?" current caret":"");
+    s.textContent = c; td.appendChild(s);
   });
+  showView("type"); guide(S.chars[0]); td.focus();
 }
 
-function updateCaret(){
-  [...textEl.children].forEach((el,i)=>{
-    el.className = "char" + (i<S.idx ? (el.dataset.wrong ? " wrong" : " correct") : "") + (i===S.idx ? " current caret":"");
-  });
-  // clavier + mains
-  document.querySelectorAll(".key.next,.key.error").forEach(e=>e.classList.remove("next","error"));
-  document.querySelectorAll(".finger.active").forEach(e=>e.classList.remove("active"));
-  const next = S.chars[S.idx];
-  if(next !== undefined && !S.finished){
-    const d = next === " " ? "SPACE" : next.toLowerCase();
-    if(next === next.toUpperCase() && next.toLowerCase() !== next){ /* maj : pas géré visuellement */ }
-    const kEl = keyEls[d]; if(kEl) kEl.classList.add("next");
-    const fEl = document.querySelector(`.finger[data-finger="${KEY_FINGER[d]?.replace(/^(l|r)/,'$1-')}"]`);
-    if(fEl) fEl.classList.add("active");
-  }
-  // barre de progression
-  $("raceCar").style.left = `calc(${(S.idx/S.chars.length)*92}% + 4px)`;
-
-}
-
-function fmtTime(s){ return `${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,"0")}` }
-function tick(){
-  if(!S || S.finished) return;
-  const now = Date.now();
-  if(S.timerEnd && now >= S.timerEnd){ finish(); return; }
-  if(S.startAt){
-    const el = (now - S.startAt)/1000;
-    $("mTime").textContent = fmtTime(el);
-    const wpm = el > 0 ? (S.idx/5)/(el/60) : 0;
-    $("mWpm").textContent = Math.max(0,Math.round(wpm));
-    $("liveWpm").textContent = Math.max(0,Math.round(wpm));
-    if(S.timerEnd) $("raceCar").style.left = `calc(${100*(1-(S.timerEnd-now)/(S.meta.duration*1000))*0.92}% + 4px)`;
-  }
-}
-
-function handleChar(ch){
-  if(!S || S.finished) return;
+function onChar(ch){
+  if(!S || S.over) return;
   if(!S.startAt) S.startAt = Date.now();
   const expected = S.chars[S.idx];
-  const el = textEl.children[S.idx];
-  const dExpect = expected === " " ? "SPACE" : expected.toLowerCase();
-  const dGot = ch === " " ? "SPACE" : ch.toLowerCase();
-
-  S.totalTyped++;
+  const el = $("textDisplay").children[S.idx];
+  S.typed++;
+  const base = expected===" "?"SPACE":expected.toLowerCase();
+  const kEl = keyEls[base];
   if(ch === expected){
-    delete el.dataset.wrong;
-    S.idx++;
-    const kEl = keyEls[dExpect];
+    S.idx++; el.classList.remove("current","caret","wrong"); el.classList.add("correct");
     if(kEl){ kEl.classList.add("pressed"); setTimeout(()=>kEl.classList.remove("pressed"),90); }
+    beep(true, true);
+    if(S.idx<S.chars.length){
+      $("textDisplay").children[S.idx].classList.add("current","caret");
+      guide(S.chars[S.idx]);
+    } else finish();
   }else{
     S.errors++;
-    el.dataset.wrong = "1";
-    if(dExpect !== " ") S.wrongKeys[dExpect] = (S.wrongKeys[dExpect]||0)+1;
-    const kEl = keyEls[dGot] || keyEls[dExpect];
-    if(kEl){ kEl.classList.add("error"); setTimeout(()=>kEl.classList.remove("error"),180); return; } // erreur : n'avance pas
+    S.wrong[base] = (S.wong===undefined?0:(S.wong||0)); // compat
+    S.wong = 1;
+    S.wrong[base] = (S.wrong[base]||0)+1;
+    el.classList.add("wrong");
+    if(kEl){ kEl.classList.add("error"); setTimeout(()=>kEl.classList.remove("error"),220); }
+    beep(false);
   }
-  const acc = Math.round((1 - S.errors/Math.max(1,S.totalTyped))*100);
+  const acc = Math.round((1-S.errors/Math.max(1,S.typed))*100);
   $("mAcc").textContent = acc+"%"; $("mErr").textContent = S.errors;
-  updateCaret();
-  if(S.idx >= S.chars.length && !S.timerEnd) finish();
+  $("pbFill").style.width = (S.idx/S.chars.length*100)+"%";
+  if(S.idx<S.chars.length) guide(S.chars[S.idx]);
 }
+setInterval(()=>{
+  if(!S || !S.startAt || S.over) return;
+  const el = (Date.now()-S.startAt)/1000;
+  $("mTime").textContent = `${Math.floor(el/60)}:${String(Math.floor(el%60)).padStart(2,"0")}`;
+  const wpm = Math.round((S.idx/5)/(el/60));
+  $("mWpm").textContent = Math.max(0,wpm);
+},250);
 
+/* ============================================================
+   6. FIN DE SESSION — étoiles, XP, badges
+   ============================================================ */
+function starsFor(acc, wpm, goal){
+  if(acc < 85) return 0;
+  if(acc >= 95 && wpm >= goal) return 3;
+  if(acc >= 92) return 2;
+  return 1;
+}
 function finish(){
-  if(!S || S.finished) return;
-  S.finished = true; S.endAt = Date.now();
-  const dur = Math.max(1,(S.endAt - S.startAt)/1000);
-  const correct = S.idx;
-  const wpm = Math.round((correct/5)/(dur/60));
-  const acc = Math.round((1 - S.errors/Math.max(1,S.totalTyped))*100);
+  S.over = true; clearGuides();
+  const dur = Math.max(1,(Date.now()-S.startAt)/1000);
+  const wpm = Math.max(0, Math.round((S.idx/5)/(dur/60)));
+  const acc = Math.round((1-S.errors/Math.max(1,S.typed))*100);
+  const stars = starsFor(acc, wpm, S.lesson.goal);
+  const prev = profile.lessons[S.lesson.id] || { stars:0, wpm:0 };
+  const newStars = Math.max(stars, prev.stars);
+  const newWpm = Math.max(wpm, prev.wpm);
+  const firstTime = stars>0 && prev.stars===0;
 
-  // recommencer un rush d'un mot si temps restant ? non : fin.
-  const entry = { t:Date.now(), type:S.type, title:S.meta.title||S.type, wpm, acc, dur:Math.round(dur), errors:S.errors };
-  const d = store.load();
-  d.history.push(entry);
-  if(S.type==="learn"){
-    const id = S.meta.id;
-    const prev = d.lessons[id];
-    const stars = acc>=95 ? (wpm>=50?3:wpm>=35?2:1) : acc>=90 ? 1 : 0;
-    if(!prev || wpm > prev.wpm || stars > (prev.stars||0))
-      d.lessons[id] = { wpm:Math.max(wpm,prev?.wpm||0), stars:Math.max(stars,prev?.stars||0), acc };
-  }
-  for(const k in S.wrongKeys) d.keys[k] = (d.keys[k]||0) + S.wrongKeys[k];
-  store.save();
+  profile.lessons[S.lesson.id] = { stars:newStars, wpm:newWpm, acc:Math.max(acc, prev.acc||0) };
+  for(const k in S.wrong) profile.keyStats[k] = (profile.keyStats[k]||0)+S.wrong[k];
+  profile.history.push({ t:Date.now(), wpm, acc, lesson:S.lesson.id });
 
+  let xpGain = 0;
+  if(stars>0){
+    xpGain = 10 + stars*8 + (firstTime?12:0) + Math.min(30, Math.max(0, Math.round((newWpm-prev.wpm)/2)));
+    if(stars<newStars) {} // retry
+  } else { xpGain = 2; }
+  profile.xp += xpGain;
+  bumpStreak();
+  profile.save();
+
+  const nextId = LESSON_LIST.findIndex(l=>(profile.lessons[l.id]?.stars||0)===0);
+  $("resTitle").textContent = stars===3 ? "Parfait !" : stars===2 ? "Très bien joué !" : stars===1 ? "Validé !" : "Presque… réessaie !";
+  const starEls = $("starsRow");
+  starEls.innerHTML = "";
+  [1,2,3].forEach(i=>{
+    const s = document.createElement("div");
+    s.className = "star" + (i<=stars?" on":"");
+    s.textContent = "⭐"; starEls.appendChild(s);
+  });
   $("rWpm").textContent = wpm; $("rAcc").textContent = acc+"%";
-  $("rTime").textContent = Math.round(dur)+"s"; $("rErr").textContent = S.errors;
-  $("resultTitle").textContent = acc >= 95 && wpm >= 40 ? "🔥 Excellent !" : acc >= 90 ? "Bien joué !" : "Continue, la précision d'abord !";
-  const worst = Object.entries(S.wrongKeys).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([k,n])=>`« ${k==="SPACE"?"espace":k} » (${n}×)`);
-  $("resultKeys").textContent = worst.length ? "À retravailler : " + worst.join(", ") : "Aucune touche faible sur cette session 👌";
-  $("btnNext").classList.toggle("hidden", S.type!=="learn");
-  $("result").classList.remove("hidden");
+  $("rTime").textContent = Math.round(dur)+"s"; $("rXp").textContent = "+"+xpGain;
+  let msg;
+  if(stars===0) msg = `Il te faut ${Math.max(wpm,S.lesson.goal)} WPM et 85 % de précision pour valider. Tu y es presque !`;
+  else if(stars===3) msg = `Objectif ${S.lesson.goal} WPM atteint. Passe à la suite, champion !`;
+  else msg = `Pour 3★ : ${S.lesson.goal} WPM avec 95 % de précision. Tu peux le faire !`;
+  $("resMsg").textContent = msg;
+  checkBadges();
+
+  if(stars===3){ confetti(); toast(`⭐ ${S.lesson.title} : 3 étoiles !`,"gold"); }
+  else if(stars>0){ toast(`✅ ${S.lesson.title} validé (+${xpGain} XP)`,"ok"); }
+  beep(stars>0);
+
+  const idxInList = LESSON_LIST.findIndex(l=>l.id===S.lesson.id);
+  const hasNext = idxInList>=0 && idxInList<LESSON_LIST.length-1 && newStars>0;
+  $("btnNext").disabled = !hasNext;
+  updateHeader();
+  showView("result");
+}
+function checkBadges(){
+  BADGES.forEach(b=>{ if(!profile.badges.includes(b.id) && b.test(profile)){
+    profile.badges.push(b.id); profile.save(); toast(`${b.em} Badge débloqué : ${b.name}`,"gold");
+  }});
 }
 
-/* ---------- navigation / vues ---------- */
-function showView(name){
-  Object.entries(views).forEach(([k,v])=>v.classList.toggle("hidden", k!==name));
-  if(name==="learn") renderLessons();
-  if(name==="stats") renderStats();
-  if(name!=="session") $("liveWpm").textContent = "0";
-  if(name==="wordrush") $("lessonTitle");
+/* ============================================================
+   7. RENDU — carte, header, stats, badges
+   ============================================================ */
+function lessonAvailable(lesson){
+  const idx = LESSON_LIST.findIndex(l=>l.id===lesson.id);
+  return idx===0 || (profile.lessons[LESSON_LIST[idx-1].id]?.stars||0)>0;
 }
-function renderLessons(){
-  const d = store.load();
-  lessonGrid.innerHTML = "";
-  LESSONS.forEach((L,i)=>{
-    const b = d.lessons[i];
-    const card = document.createElement("div");
-    card.className = "lesson";
-    card.innerHTML = `
-      ${b?`<span class="best">${b.wpm} wpm</span>`:""}
-      <span class="lvl">${L.lvl}</span>
-      <h3>${L.title}</h3>
-      <p>${L.desc}</p>
-      <div class="stars">${"★".repeat(b?.stars||0)}${"☆".repeat(3-(b?.stars||0))}</div>`;
-    card.onclick = ()=> newSession("learn", L.gen(), {id:i, title:`${L.lvl} — ${L.title}`});
-    lessonGrid.appendChild(card);
+function currentLesson(){
+  return LESSON_LIST.find(l=>(profile.lessons[l.id]?.stars||0)===0) || LESSON_LIST[LESSON_LIST.length-1];
+}
+function starsOfUnit(u){
+  const total = UNIT_LESSONS[u].length*3;
+  const got = UNIT_LESSONS[u].reduce((a,l)=>a+(profile.lessons[l.id]?.stars||0),0);
+  return {got,total};
+}
+function updateHeader(){
+  $("streak").textContent = profile.streak;
+  $("level").textContent = levelOf(profile.xp);
+  const lvlXp = profile.xp - (levelOf(profile.xp)-1)*100;
+  $("xpTxt").textContent = `${profile.xp} XP`;
+  $("xpFill").style.width = Math.min(100, lvlXp)+"%";
+}
+function renderMap(){
+  const cur = currentLesson();
+  $("contTitle").textContent = (profile.lessons[cur.id]?.stars||0)>0 ? "Parcours terminé — libre !" : cur.title;
+  $("contSub").textContent = `Unité ${cur.unit+1} · ${CURRICULUM[cur.unit].title}`;
+  const list = $("unitList"); list.innerHTML = "";
+  CURRICULUM.forEach((u,i)=>{
+    const s = starsOfUnit(i);
+    const unitEl = document.createElement("div"); unitEl.className = "unit";
+    const done = s.got===s.total;
+    unitEl.innerHTML = `
+      <div class="unit-head ${done?"done":""}">
+        <div class="unit-num">${i+1}</div>
+        <div><h3>${u.title}</h3><p>${u.desc}</p></div>
+        <span class="unit-stars">${s.got>=s.total?"🏆":`${s.got}/${s.total} ⭐`}</span>
+      </div>`;
+    const row = document.createElement("div"); row.className = "lessons";
+    u.lessons.forEach(l=>{
+      const st = profile.lessons[l.id]?.stars||0;
+      const available = lessonAvailable(l);
+      const b = document.createElement("div");
+      b.className = "lesson" + (available?"":" locked") + (st>0?" done":"") + (l.id===cur.id?" current":"");
+      b.innerHTML = `
+        <div class="ln">${available?(st>0?"✓":"▸"):"🔒"}</div>
+        <div class="lt">${l.title}</div>
+        <div class="ls">${"★".repeat(st)}${"☆".repeat(3-st)}</div>`;
+      if(available) b.onclick = ()=>openIntro(l);
+      row.appendChild(b);
+    });
+    unitEl.appendChild(row); list.appendChild(unitEl);
   });
 }
 
+/* ---------- stats ---------- */
 function renderStats(){
-  const d = store.load();
-  const h = d.history;
   const cards = $("statCards"); cards.innerHTML = "";
-  if(!h.length){
-    cards.innerHTML = `<div class="stat-card" style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted)">
-      Aucune session enregistrée — lance un cours et reviens ici !</div>`;
-    $("chart").innerHTML = ""; $("weakKeys").innerHTML = ""; return;
+  const h = profile.history, done = doneCount(profile), stars = totalStars(profile);
+  const best = h.length?Math.max(...h.map(x=>x.wpm)):0;
+  const avg = h.length?Math.round(h.reduce((a,x)=>a+x.wpm,0)/h.length):0;
+  const avgAcc = h.length?Math.round(h.reduce((a,x)=>a+x.acc,0)/h.length):0;
+  [["Niveau",levelOf(profile.xp)],["XP total",profile.xp],
+   ["Leçons terminées",done+" / "+LESSON_LIST.length],["Étoiles",stars],
+   ["Meilleur WPM",best],["WPM moyen",avg],["Précision moy.",avgAcc+"%"],["Série",profile.streak+" j"]
+  ].forEach(([l,v])=>cards.insertAdjacentHTML("beforeend",
+    `<div class="stat-card"><small>${l}</small><b>${v}</b></div>`));
+  const svg = $("wpmChart");
+  const last = profile.history.slice(-24);
+  if(!last.length){ svg.innerHTML = `<text x="300" y="90" text-anchor="middle" fill="#7a84a1" font-size="13">Lance une leçon pour voir ta courbe !</text>`; }
+  else{
+    const W=600,H=180,P=14;
+    const maxY = Math.max(...last.map(x=>x.wpm),30);
+    const line = last.map((x,i)=>{
+      const lx = P+(i/Math.max(1,last.length-1))*(W-2*P);
+      const ly = H-P-(x.wpm/maxY)*(H-2*P);
+      return `${lx.toFixed(1)},${ly.toFixed(1)}`;
+    }).join(" ");
+    svg.innerHTML = `
+      <line x1="${P}" y1="${H-P}" x2="${W-P}" y2="${H-P}" stroke="#e3e8f4" stroke-width="1"/>
+      <polyline points="${line}" fill="none" stroke="#5b5ef2" stroke-width="2.5" style="filter:drop-shadow(0 0 4px rgba(91,94,242,.5))"/>`;
   }
-  const best = Math.max(...h.map(s=>s.wpm));
-  const avg = Math.round(h.reduce((a,s)=>a+s.wpm,0)/h.length);
-  const avgAcc = Math.round(h.reduce((a,s)=>a+s.acc,0)/h.length);
-  const total = h.length;
-  [["Meilleur WPM",best],["WPM moyen",avg],["Précision moy.",avgAcc+"%"],["Sessions",total]].forEach(([l,v])=>{
-    cards.insertAdjacentHTML("beforeend",`<div class="stat-card"><small>${l}</small><b>${v}</b></div>`);
-  });
-  // courbe WPM (20 dernières sessions)
-  const last = h.slice(-20);
-  const W=600,H=200,P=10;
-  const maxY = Math.max(...last.map(s=>s.wpm),20);
-  const pts = last.map((s,i)=>{
-    const x = P + (i/Math.max(1,last.length-1))*(W-2*P);
-    const y = H-P - (s.wpm/maxY)*(H-2*P);
-    return `${x.toFixed(1)},${y.toFixed(1)}`;
-  }).join(" ");
-  const accLine = last.map((s,i)=>{
-    const x = P + (i/Math.max(1,last.length-1))*(W-2*P);
-    const y = H-P - (s.acc/100)*(H-2*P);
-    return `${x.toFixed(1)},${y.toFixed(1)}`;
-  }).join(" ");
-  $("chart").innerHTML = `
-    <polyline points="${accLine}" fill="none" stroke="var(--warn)" stroke-width="1.5" opacity=".6"/>
-    <polyline points="${pts}" fill="none" stroke="var(--neon2)" stroke-width="2.5"
-      style="filter:drop-shadow(0 0 4px var(--neon2))"/>`;
-  // touches faibles
   const wk = $("weakKeys"); wk.innerHTML = "";
-  const sorted = Object.entries(d.keys).filter(([k])=>k!=="SPACE").sort((a,b)=>b[1]-a[1]).slice(0,10);
-  if(!sorted.length) wk.innerHTML = `<p style="color:var(--muted)">Rien à signaler pour l'instant.</p>`;
-  sorted.forEach(([k,n])=> wk.insertAdjacentHTML("beforeend",
-    `<div class="weak-key">${k.toUpperCase()==k?k:k.toUpperCase()}<small>${n} erreurs</small></div>`));
+  const sorted = Object.entries(profile.keyStats).filter(([k])=>k!=="SPACE").sort((a,b)=>b[1]-a[1]).slice(0,10);
+  if(!sorted.length) wk.innerHTML = `<p class="no-weak">Rien à signaler — continue comme ça ! 💪</p>`;
+  sorted.forEach(([k,n])=>wk.insertAdjacentHTML("beforeend",
+    `<div class="weak-key">${k.toUpperCase()}<small>${n} err.</small></div>`));
+}
+function renderBadges(){
+  const g = $("badgeGrid"); g.innerHTML = "";
+  BADGES.forEach(b=>{
+    const un = profile.badges.includes(b.id);
+    g.insertAdjacentHTML("beforeend",
+      `<div class="badge ${un?"unlocked":""}"><span class="em">${b.em}</span><h4>${b.name}</h4><p>${b.desc}</p></div>`);
+  });
 }
 
-/* ---------- éditeur de mots (wordrush) ---------- */
-function genWords(seconds){
-  const count = 60 * seconds / 3; // dense, régénéré à la fin si besoin
-  let text = Array.from({length:Math.round(count)},()=>rand(WORDS)).join(" ");
-  return text;
+/* ============================================================
+   8. PUBILS — sons, confettis, toasts
+   ============================================================ */
+let AC = null;
+function beep(ok, tick){
+  if(!profile.sound) return;
+  try{
+    AC = AC || new (window.AudioContext||window.webkitAudioContext)();
+    const o = AC.createOscillator(), g = AC.createGain();
+    o.type = ok ? "sine" : "sawtooth";
+    o.frequency.value = tick ? 880 : ok ? 660 : 150;
+    g.gain.setValueAtTime(tick ? .04 : .12, AC.currentTime);
+    g.gain.exponentialRampToValueAtTime(.0001, AC.currentTime + (ok?.09:.2));
+    o.connect(g).connect(AC.destination);
+    o.start(); o.stop(AC.currentTime + (ok?.1:.22));
+  }catch(e){}
+}
+const COLORS = ["#5b5ef2","#ffb93d","#22c58b","#ff5b6e","#8f8cff","#4dc9ff"];
+function confetti(){
+  const cv = $("confetti"), ctx = cv.getContext("2d");
+  cv.width = innerWidth; cv.height = innerHeight;
+  const parts = Array.from({length:90},()=>({
+    x: cv.width/2 + (Math.random()-.5)*200, y: cv.height*.35,
+    vx:(Math.random()-.5)*13, vy:-Math.random()*13-4,
+    s:5+Math.random()*5, c:rand(COLORS), r:Math.random()*Math.PI, vr:(Math.random()-.5)*.3 }));
+  let frames = 0;
+  (function anim(){
+    ctx.clearRect(0,0,cv.width,cv.height);
+    parts.forEach(p=>{
+      p.x+=p.vx; p.y+=p.vy; p.vy+=.45; p.r+=p.vr;
+      ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.r);
+      ctx.fillStyle=p.c; ctx.fillRect(-p.s/2,-p.s/2,p.s,p.s); ctx.restore();
+    });
+    if(++frames < 130) requestAnimationFrame(anim);
+    else ctx.clearRect(0,0,cv.width,cv.height);
+  })();
+}
+function toast(msg, kind=""){
+  const t = document.createElement("div");
+  t.className = "toast "+kind; t.textContent = msg;
+  $("toasts").appendChild(t);
+  setTimeout(()=>{ t.style.transition="all .4s"; t.style.opacity="0"; t.style.transform="translateX(30px)"; }, 2600);
+  setTimeout(()=>t.remove(), 3100);
 }
 
-/* ---------- events ---------- */
-document.getElementById("tabs").addEventListener("click", e=>{
+/* ============================================================
+   9. ÉVÉNEMENTS & INIT
+   ============================================================ */
+$("tabs").addEventListener("click", e=>{
   const b = e.target.closest(".tab"); if(!b) return;
-  document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active",t===b));
-  const mode = b.dataset.mode;
-  if(mode==="drill"){ newSession("drill", genDrill(), {title:"Cadence ciblée · tes touches faibles"}); return; }
-  showView(mode);
+  showView(b.dataset.view);
 });
-
-textEl.addEventListener("click", ()=> textEl.focus());
-window.addEventListener("keydown", e=>{
-  if(!views.session || views.session.classList.contains("hidden")) {
-    if(e.key==="Escape") return;
-    return;
-  }
-  if(!$("result").classList.contains("hidden")){
-    if(e.key==="Enter"){ e.preventDefault(); $("btnAgain").click(); }
-    return;
-  }
-  if(e.key==="Escape"){ showView(S?.type==="learn" ? "learn" : "wordrush"); return; }
-  if(e.key==="Tab"){ e.preventDefault(); $("btnRestart").click(); return; }
-  if(e.key.length===1){ e.preventDefault(); handleChar(e.key); }
-});
-
-$("btnBack").onclick = ()=> showView(S?.type==="wordrush" ? "wordrush" : "learn");
-$("btnRestart").onclick = ()=>{
-  if(!S) return;
-  let text;
-  if(S.type==="learn") text = LESSONS[S.meta.id].gen();
-  else if(S.type==="drill") text = genDrill();
-  else text = genWords(S.meta.duration);
-  newSession(S.type, text, S.meta);
-};
-$("btnAgain").onclick = ()=> $("btnRestart").click();
+$("btnContinue").onclick = ()=>openIntro(currentLesson());
+function openIntro(l){
+  $("introCrumb").textContent = `Unité ${l.unit+1} · ${l.unitTitle}`;
+  $("introTitle").textContent = l.title;
+  const ik = $("introKeys"); ik.innerHTML = "";
+  const dk = l.sentences ? ["Aa"] : l.words ? ["abc"] : l.caps ? ["Aa"] : (l.keys||l.review);
+  dk.forEach(k=>{ const d=document.createElement("div"); d.className="new-key"; d.textContent=k; ik.appendChild(d); });
+  $("introTip").textContent = l.tip;
+  $("introGoal").textContent = l.goal;
+  showView("intro");
+  $("btnStartLesson").onclick = ()=>startLesson(l);
+}
+$("btnRetry").onclick = ()=>{ if(S) startLesson(S.lesson); };
 $("btnNext").onclick = ()=>{
-  const nextId = (S.meta.id+1) % LESSONS.length;
-  S.meta.id = nextId; $("btnRestart").click();
+  const i = LESSON_LIST.findIndex(l=>l.id===S.lesson.id);
+  if(i>=0 && i<LESSON_LIST.length-1) openIntro(LESSON_LIST[i+1]);
 };
-$("btnClearStats").onclick = ()=>{ if(confirm("Effacer tout l'historique ?")){ store.clear(); renderStats(); } };
-document.querySelectorAll("[data-rush]").forEach(b=>{
-  b.onclick = ()=>{ const dur = +b.dataset.rush; newSession("wordrush", genWords(dur), {duration:dur, title:`Mots · ${dur}s`}); };
-});
-
-/* mode drill : mots ciblant tes touches faibles */
-function genDrill(){
-  const d = store.load();
-  const weak = Object.entries(d.keys).filter(([k])=>k!=="SPACE").sort((a,b)=>b[1]-a[1])
-    .slice(0,4).map(([k])=>k);
-  let pool;
-  if(weak.length){
-    pool = WORDS.filter(w => weak.some(k => w.includes(k)));
-    if(pool.length < 10) pool = WORDS;
-  } else pool = WORDS.slice(0,120);
-  return Array.from({length:15},()=>rand(pool)).join(" ");
-}
-
-/* astuce rotative */
-setInterval(()=>{ $("tip").textContent = TIPS[Math.floor(Math.random()*TIPS.length)] }, 9000);
-
-/* perturbation focale du défilement */
+$("btnSkip").onclick = ()=>{ showView("map"); clearGuides(); };
+$("btnSound").onclick = ()=>{
+  profile.sound = !profile.sound; profile.save();
+  $("btnSound").textContent = profile.sound ? "🔊" : "🔇";
+  toast(profile.sound ? "🔊 Sons activés" : "🔇 Sons coupés");
+};
 window.addEventListener("keydown", e=>{
-  if([" ","ArrowUp","ArrowDown"].includes(e.key) && !views.session.classList.contains("hidden")) e.preventDefault();
-}, {passive:false});
+  const typing = !$("view-type").classList.contains("hidden");
+  if(!typing) return;
+  if(e.key==="Escape"){ e.preventDefault(); showView("map"); clearGuides(); return; }
+  if(e.key.length===1 || e.key===" "){
+    e.preventDefault();
+    if(e.key.length===1) onChar(e.key);
+  }
+});
+window.addEventListener("keydown", e=>{
+  if([" ","ArrowUp","ArrowDown","PageUp","PageDown"].includes(e.key)
+     && !$("view-type").classList.contains("hidden")) e.preventDefault();
+},{passive:false});
+setInterval(()=>{ $("tip").textContent = TIPS[Math.floor(Math.random()*TIPS.length)] }, 10000);
 
-/* ---------- init ---------- */
-store.load();
-buildKeyboard();
-newSessionInit: {
-  showView("learn");
-}
+profile.load();
+$("btnSound").textContent = profile.sound ? "🔊" : "🔇";
+updateHeader();
+showView("map");

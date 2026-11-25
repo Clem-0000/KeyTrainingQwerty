@@ -3,152 +3,155 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>QwertyLab — Entraîneur de frappe hors-ligne</title>
+<title>QwertyLab — Apprends à taper vite, sans faute</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<div class="scanlines"></div>
-
+<!-- ================= HEADER ================= -->
 <header class="topbar">
   <div class="logo">Qwerty<span>Lab</span></div>
   <nav class="tabs" id="tabs">
-    <button class="tab active" data-mode="learn">🎓 Cours</button>
-    <button class="tab" data-mode="drill">⚡ Cadence</button>
-    <button class="tab" data-mode="wordrush">🔥 Mots</button>
-    <button class="tab" data-mode="stats">📊 Stats</button>
+    <button class="tab active" data-view="map">🗺️ Parcours</button>
+    <button class="tab" data-view="stats">📊 Progrès</button>
+    <button class="tab" data-view="badges">🏅 Badges</button>
   </nav>
-  <div class="topbar-right">
-    <div class="live-wpm"><span id="liveWpm">0</span><small>WPM</small></div>
+  <div class="profile">
+    <div class="streak" title="Série de jours d'entraînement">🔥 <b id="streak">0</b></div>
+    <div class="xp-wrap" title="Expérience">
+      <div class="xp-bar"><div class="xp-fill" id="xpFill"></div></div>
+      <span class="xp-txt"><b id="level">1</b> · <span id="xpTxt">0</span> XP</span>
+    </div>
   </div>
 </header>
 
 <main class="layout">
 
-  <!-- ===================== PANEL GAUCHE : CLAVIER + MAINS ===================== -->
-  <aside class="side-panel">
-    <section class="panel hands-panel">
-      <h2>🤚 Placement des doigts</h2>
-      <svg viewBox="0 0 300 130" class="hands" id="handsSvg">
-        <!-- mains stylisées : chaque doigt est un path cliquable/surbrillant -->
-        <g id="hand-left">
-          <path class="finger f-l-pinky" data-finger="l-pinky" d="M28 62 q-14 2 -14 16 q0 14 10 16 q8 2 12 -4 l4 -24 z"/>
-          <path class="finger f-l-ring"  data-finger="l-ring"  d="M52 50 q-10 2 -10 18 q0 16 9 18 q8 2 11 -4 l3 -30 z"/>
-          <path class="finger f-l-mid"   data-finger="l-mid"   d="M76 44 q-9 2 -9 20 q0 17 8 19 q8 2 11 -4 l3 -32 z"/>
-          <path class="finger f-l-index" data-finger="l-index" d="M100 48 q-8 2 -8 18 q0 15 8 17 q8 2 11 -4 l3 -28 z"/>
-          <ellipse class="finger f-l-thumb" data-finger="l-thumb" cx="118" cy="102" rx="14" ry="9"/>
+  <!-- ================= PANNEAU GAUCHE (fixe) ================= -->
+  <aside class="side">
+    <section class="panel">
+      <h2>🤚 Tes mains</h2>
+      <svg viewBox="0 0 300 120" class="hands">
+        <g>
+          <path class="finger" data-finger="l-pinky" d="M30 58q-15 2-15 17t11 16q8 2 12-4l4-25z"/>
+          <path class="finger" data-finger="l-ring"  d="M55 44q-11 2-11 19t10 19q8 2 11-4l3-30z"/>
+          <path class="finger" data-finger="l-mid"   d="M79 38q-10 2-10 21t9 20q8 2 11-4l3-32z"/>
+          <path class="finger" data-finger="l-index" d="M104 42q-9 2-9 19t9 19q8 2 11-4l3-30z"/>
+          <ellipse class="finger" data-finger="l-thumb" cx="122" cy="94" rx="13" ry="8"/>
+          <ellipse class="finger" data-finger="r-thumb" cx="178" cy="94" rx="13" ry="8"/>
+          <path class="finger" data-finger="r-index" d="M196 42q9 2 9 19t-9 19q-8 2-11-4l-3-30z"/>
+          <path class="finger" data-finger="r-mid"   d="M221 38q10 2 10 21t-9 20q-8 2-11-4l-3-32z"/>
+          <path class="finger" data-finger="r-ring"  d="M245 44q11 2 11 19t-10 19q-8 2-11-4l-3-30z"/>
+          <path class="finger" data-finger="r-pinky" d="M270 58q15 2 15 17t-11 16q-8 2-12-4l-4-25z"/>
         </g>
-        <g id="hand-right">
-          <path class="finger f-r-pinky" data-finger="r-pinky" d="M272 62 q14 2 14 16 q0 14 -10 16 q-8 2 -12 -4 l-4 -24 z"/>
-          <path class="finger f-r-ring"  data-finger="r-ring"  d="M248 50 q10 2 10 18 q0 16 -9 18 q-8 2 -11 -4 l-3 -30 z"/>
-          <path class="finger f-r-mid"   data-finger="r-mid"   d="M224 44 q9 2 9 20 q0 17 -8 19 q-8 2 -11 -4 l-3 -32 z"/>
-          <path class="finger f-r-index" data-finger="r-index" d="M200 48 q8 2 8 18 q0 15 -8 17 q-8 2 -11 -4 l-3 -28 z"/>
-          <ellipse class="finger f-r-thumb" data-finger="r-thumb" cx="182" cy="102" rx="14" ry="9"/>
-        </g>
-        <text x="150" y="120" class="hands-hint" id="handsHint">Pose tes mains : index sur F et J</text>
+        <text x="150" y="115" class="hands-hint">Index sur F et J — les bosses du clavier</text>
       </svg>
     </section>
 
-    <section class="panel keyboard-panel">
+    <section class="panel">
       <h2>⌨️ Clavier</h2>
       <div class="keyboard" id="keyboard"></div>
     </section>
 
-    <section class="panel tips-panel">
-      <h2>💡 Conseil</h2>
-      <p class="tip" id="tip">Ne regarde pas tes mains. Trouve les petites bosses sur F et J : ce sont tes points d'ancrage.</p>
+    <section class="panel tip-panel">
+      <h2>💡 Astuce</h2>
+      <p class="tip" id="tip">Bienvenue ! Clique sur « Continuer » pour ta première leçon.</p>
     </section>
+
+    <button class="btn icon-btn" id="btnSound" title="Activer / couper les sons">🔊</button>
   </aside>
 
-  <!-- ===================== ZONE PRINCIPALE ===================== -->
-  <section class="main-area">
+  <!-- ================= ZONE DROITE ================= -->
+  <section class="content">
 
-    <!-- MODE COURS -->
-    <div class="view" id="view-learn">
-      <div class="lesson-grid" id="lessonGrid"></div>
+    <!-- ------ VUE PARCOURS ------ -->
+    <div class="view" id="view-map">
+      <div class="continue-card" id="continueCard">
+        <div class="continue-left">
+          <small>Reprends où tu t'es arrêté</small>
+          <h3 id="contTitle">Début du parcours</h3>
+          <p id="contSub">Unité 1 · Leçon 1</p>
+        </div>
+        <button class="btn big primary" id="btnContinue">▶ Continuer</button>
+      </div>
+      <div id="unitList"></div>
     </div>
 
-    <!-- ZONE D'ENTRAINEMENT (partagée learn / drill / wordrush) -->
-    <div class="view hidden" id="view-session">
-      <div class="session-head">
-        <button class="btn back" id="btnBack">← Quitter</button>
-        <h2 class="lesson-title" id="lessonTitle">Leçon</h2>
-        <div class="session-metrics">
-          <div class="metric"><small>Précision</small><b id="mAcc">100%</b></div>
-          <div class="metric"><small>Erreurs</small><b id="mErr">0</b></div>
-          <div class="metric"><small>Temps</small><b id="mTime">0:00</b></div>
-          <div class="metric"><small>WPM</small><b id="mWpm">0</b></div>
+    <!-- ------ VUE INTRO DE LEÇON ------ -->
+    <div class="view hidden" id="view-intro">
+      <div class="intro-card">
+        <span class="crumb" id="introCrumb">Unité 1</span>
+        <h2 id="introTitle">Nouvelle leçon</h2>
+        <div class="new-keys" id="introKeys"></div>
+        <p class="intro-tip" id="introTip"></p>
+        <div class="goal-row">
+          <div class="goal">🥉 Objectif 3★ : <b id="introGoal"></b> WPM</div>
+          <div class="goal">🎯 Précision : <b id="introAcc">95%</b></div>
         </div>
+        <button class="btn big primary" id="btnStartLesson">C'est parti !</button>
       </div>
+    </div>
 
-      <div class="race-track">
-        <div class="race-car" id="raceCar">🚗</div>
-        <div class="race-finish">🏁</div>
+    <!-- ------ VUE ENTRAÎNEMENT ------ -->
+    <div class="view hidden" id="view-type">
+      <div class="type-head">
+        <span class="crumb" id="typeCrumb"></span>
+        <div class="metrics">
+          <div class="m"><small>WPM</small><b id="mWpm">0</b></div>
+          <div class="m"><small>Précision</small><b id="mAcc">100%</b></div>
+          <div class="m"><small>Erreurs</small><b id="mErr">0</b></div>
+          <div class="m"><small>Temps</small><b id="mTime">0:00</b></div>
+        </div>
+        <button class="btn icon-btn" id="btnSkip">✕</button>
       </div>
-
+      <div class="progressbar"><div class="pb-fill" id="pbFill"></div></div>
       <div class="text-display" id="textDisplay" tabindex="0"></div>
+      <p class="typing-hint">Commence à taper — le texte t'attend. <b>Échap</b> pour quitter.</p>
+    </div>
 
-      <div class="session-actions">
-        <button class="btn ghost" id="btnRestart">↻ Recommencer</button>
-        <p class="hint">Tape le texte ci-dessus — <b>Échap</b> pour quitter</p>
-      </div>
-
-      <div class="result hidden" id="result">
-        <div class="result-card">
-          <h3 id="resultTitle">Terminé !</h3>
-          <div class="result-grid">
-            <div class="r-metric"><b id="rWpm">0</b><small>WPM</small></div>
-            <div class="r-metric"><b id="rAcc">0%</b><small>Précision</small></div>
-            <div class="r-metric"><b id="rTime">0s</b><small>Temps</small></div>
-            <div class="r-metric"><b id="rErr">0</b><small>Erreurs</small></div>
-          </div>
-          <div class="result-keys" id="resultKeys"></div>
-          <div class="result-actions">
-            <button class="btn" id="btnAgain">Rejouer</button>
-            <button class="btn primary" id="btnNext">Suivant →</button>
-          </div>
+    <!-- ------ VUE RÉSULTAT ------ -->
+    <div class="view hidden" id="view-result">
+      <div class="result-card">
+        <h2 id="resTitle"></h2>
+        <div class="stars-row" id="starsRow"></div>
+        <div class="res-grid">
+          <div class="r"><b id="rWpm">0</b><small>WPM</small></div>
+          <div class="r"><b id="rAcc">100%</b><small>Précision</small></div>
+          <div class="r"><b id="rTime">0s</b><small>Temps</small></div>
+          <div class="r"><b id="rXp">+0</b><small>XP</small></div>
+        </div>
+        <p class="res-msg" id="resMsg"></p>
+        <div class="res-actions">
+          <button class="btn" id="btnRetry">↻ Recommencer</button>
+          <button class="btn primary" id="btnNext">Leçon suivante →</button>
         </div>
       </div>
     </div>
 
-    <!-- MODE MOTS (config) -->
-    <div class="view hidden" id="view-wordrush">
-      <div class="center-card">
-        <h2>🔥 Mots brûlants</h2>
-        <p>Enchaîne des mots aléatoires le plus vite possible. Choisis ta discipline :</p>
-        <div class="btn-row">
-          <button class="btn big" data-rush="30">30 s</button>
-          <button class="btn big" data-rush="60">60 s</button>
-          <button class="btn big" data-rush="120">2 min</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- MODE STATS -->
+    <!-- ------ VUE PROGRÈS ------ -->
     <div class="view hidden" id="view-stats">
-      <div class="stats-head">
-        <h2>📊 Tes progrès</h2>
-        <button class="btn danger" id="btnClearStats">Effacer l'historique</button>
-      </div>
       <div class="stat-cards" id="statCards"></div>
-      <div class="chart-wrap panel">
+      <div class="panel chart-panel">
         <h3>Évolution WPM</h3>
-        <svg id="chart" viewBox="0 0 600 200" preserveAspectRatio="none"></svg>
+        <svg id="wpmChart" viewBox="0 0 600 180" preserveAspectRatio="none"></svg>
       </div>
-      <div class="chart-wrap panel">
-        <h3>Touches à travailler</h3>
+      <div class="panel">
+        <h3>Touches à retravailler</h3>
         <div class="weak-keys" id="weakKeys"></div>
       </div>
+    </div>
+
+    <!-- ------ VUE BADGES ------ -->
+    <div class="view hidden" id="view-badges">
+      <div class="badge-grid" id="badgeGrid"></div>
     </div>
 
   </section>
 </main>
 
-<footer class="footer">
-  100 % hors-ligne — aucune ressource externe, tes stats restent dans ton navigateur.
-</footer>
-
-<div class="hidden" id="focus-mask"><div>Clique ici et tape !</div></div>
+<canvas id="confetti"></canvas>
+<div class="toasts" id="toasts"></div>
+<footer class="footer">100 % hors-ligne · tes données restent dans ton navigateur (localStorage)</footer>
 
 <script src="app.js"></script>
 </body>
