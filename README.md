@@ -1,58 +1,32 @@
-# ⌨️ KeyTrain — entraîneur de frappe QWERTY 100 % local
+# ⌨️ QwertyLab — Entraîneur de frappe QWERTY hors-ligne
 
-Un petit trainer de dactylo pour **clavier QWERTY**, pensé pour fonctionner **sans aucune connexion Internet** (idéal derrière un proxy d'entreprise) : tout est en HTML/CSS/JS vanilla, zéro dépendance externe, zéro appel réseau.
+Trainer de dactylo au design néon, **100 % hors-ligne** (aucune ressource externe, aucun appel réseau) — parfait derrière un proxy d'entreprise.
 
-## 🚀 Lancer l'application
+## Lancer
 
-Aucune installation, aucun build :
+Ouvre simplement `index.html` dans ton navigateur (`file://` fonctionne). Ou :
 
-- **Méthode 1 (la plus simple, 100 % hors-ligne)** : ouvrir directement `index.html` dans ton navigateur (double-clic, fonctionne en `file://`).
-- **Méthode 2** : servir le dossier en local, par exemple :
-  ```bash
-  python3 -m http.server 8000
-  # puis ouvrir http://localhost:8000
-  ```
-
-## 🌐 Version en ligne (GitHub Pages)
-
-Le dépôt étant public, l'application peut être servie gratuitement par **GitHub Pages** :
-
-1. Aller dans **Settings → Pages** du dépôt.
-2. « Build and deployment » → Source : **Deploy from a branch**.
-3. Branche : `vibe/keytrain-offline-cae9ad` (ou `main` après fusion de la PR), dossier : `/ (root)` → **Save**.
-
-L'application est alors disponible à l'adresse :
-
-👉 **https://clem-0000.github.io/KeyTrainingQwerty/**
-
-(Toutes les ressources sont en chemins relatifs, donc le site fonctionne aussi sous ce sous-chemin. Le déploiement prend ~1 minute après chaque push sur la branche source.)
-
-
-## 🎯 Fonctionnalités
-
-- **Clavier QWERTY virtuel codé par doigt** : chaque touche a la couleur du doigt qui doit la frapper ; la prochaine touche pulse et le doigt concerné est mis en évidence dans la légende. Les petits traits sur `F` et `J` rappellent la ligne de base.
-- **4 modes d'exercice** :
-  - 🎯 **Touches** : ligne de base `ASDF JKL;` puis rangée haute, puis tout le clavier.
-  - 📝 **Mots** : mots aléatoires, niveaux facile / normal / difficile.
-  - 💬 **Phrases** : phrases complètes (majuscules, ponctuation).
-  - ⏱️ **Chrono** : sprint de 30 / 60 / 120 s avec génération de mots infinie.
-- **Langue FR ou EN** (les accents français sont retirés à la génération pour rester tapables sur n'importe quelle disposition).
-- **Métriques en direct** : vitesse en MPM (mots/min, = WPM), précision %, erreurs, temps, barre de progression.
-- **Écran de résultats** : record personnel, courbe de vitesse pendant la session.
-- **Progression sauvegardée localement** (`localStorage`) : historique des sessions, graphique d'évolution, et **carte de chaleur des erreurs** sur le clavier pour visualiser tes touches faibles.
-- **Sons** générés en WebAudio (aucun fichier audio), désactivables.
-- Raccourcis : `Entrée` pour lancer/rejouer, `Retour arrière` pour corriger.
-
-## 🗂️ Structure
-
-```
-index.html          page unique (3 vues : accueil, entraînement, progression)
-css/style.css       thème sombre néon, 100 % local
-js/words-fr.js      listes de mots/phrases FR
-js/words-en.js      listes de mots/phrases EN
-js/app.js           logique : génération de texte, saisie, clavier, stats, sons
+```bash
+python3 -m http.server 8000
+# puis http://localhost:8000
 ```
 
-## 🔒 Confidentialité
+## Fonctionnalités
 
-Rien ne quitte ta machine : pas de compte, pas de télémétrie, pas de requête externe. L'historique reste dans le `localStorage` de ton navigateur (bouton « Effacer mon historique » sur la page Progression).
+- 🎓 **Cours progressifs** — 11 leçons, de la rangée de base (`asdf jkl;`) jusqu'aux phrases complètes, avec étoiles et meilleur WPM par leçon.
+- ⚡ **Cadence ciblée** — génère automatiquement des mots contenant **tes touches les plus faibles**.
+- 🔥 **Mots brûlants** — sprint de 30 s / 60 s / 2 min sur des mots aléatoires.
+- 🤚 **Guide de placement** — schéma des mains : le doigt recommandé s'illumine pour chaque caractère.
+- ⌨️ **Clavier virtuel** — la touche à presser s'illumine, code couleur par doigt, bosses F/J affichées.
+- 📊 **Stats locales** — historique, courbe WPM/précision (SVG), classement des touches à retravailler. Tout reste dans `localStorage`.
+- 🚗 **Piste de course** — barre de progression ludique pendant la frappe.
+
+## Raccourcis
+
+| Touche | Action |
+|---|---|
+| `Échap` | Quitter la session |
+| `Tab` | Recommencer |
+| `Entrée` (sur résultat) | Rejouer |
+
+Aucune dépendance, aucun build. HTML/CSS/JS vanilla.
