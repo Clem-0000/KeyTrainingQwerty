@@ -4,9 +4,9 @@ Portail d’accueil unifié permettant de tester et comparer trois sites d’app
 
 | Modèle | Application | Dossier | Origine Git |
 | :--- | :--- | :--- | :--- |
-| **Antigravity** | **Keycraft QWERTY** | [`./antigravity/`](./antigravity/) | Branche `antigravity` (`344f6bc`) |
-| **Mistral 4** | **KeyTrain** | [`./mistral/`](./mistral/) | Branche `vibe/keytrain-offline-cae9ad` (`45df01a`, version originale avant fusion PR #2) |
-| **GLM** | **QwertyLab** | [`./glm/`](./glm/) | Branche `vibe/trainer-pro-caba27` / `main` (`109e106`) |
+| **Antigravity** | **Keycraft QWERTY** | [`./antigravity/`](./antigravity/) | Branche `antigravity` |
+| **Mistral 4** | **KeyTrain** | [`./mistral/`](./mistral/) | Branche `mistral-4` |
+| **GLM** | **QwertyLab** | [`./glm/`](./glm/) | Branche `glm` |
 
 ## Accès en ligne (GitHub Pages)
 
